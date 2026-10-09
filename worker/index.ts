@@ -18,6 +18,7 @@ type ParcelEnv = Cloudflare.Env & {
   POLICIES_APPROVED?: string;
   SITE_ACCESS_PASSWORD?: string;
   RUN_SECONDS?: string;
+  SCHEDULER_MAX_CALLS?: string;
 };
 
 // Operator endpoints carry their own bearer authorization and must stay
@@ -102,12 +103,14 @@ async function runBackgroundWork(env: ParcelEnv) {
     return json;
   };
 
-  // Keep ticking while there is work, for up to ~50 seconds, then let the next
-  // minute's trigger continue. Job leases make overlapping runs safe.
+  // Keep ticking while there is work, for up to ~50 seconds and a bounded
+  // number of calls, then let the next minute's trigger continue. Cleanup runs
+  // on the first call only. Job leases make overlapping runs safe.
   const seconds = Math.min(50, Math.max(1, Number(env.RUN_SECONDS) || 50));
+  const maxCalls = Math.min(200, Math.max(1, Number(env.SCHEDULER_MAX_CALLS) || 40));
   const deadline = Date.now() + seconds * 1000;
-  while (Date.now() < deadline) {
-    const result = await call("/api/worker/tick", "{}");
+  for (let calls = 0; calls < maxCalls && Date.now() < deadline; calls++) {
+    const result = await call("/api/worker/tick", JSON.stringify({ clean: calls === 0 }));
     console.log(JSON.stringify({ worked: result.worked, type: result.type }));
     if (!result.worked) break;
   }

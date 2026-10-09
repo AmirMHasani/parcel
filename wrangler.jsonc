@@ -29,6 +29,10 @@
   "vars": {
     "PUBLIC_SITE_URL": "https://parcelexport.com",
     "BACKGROUND_EXPORTS": "1",
+    // Workers Free: one background tick per request (10 ms CPU, 50 subrequests).
+    // After upgrading to Workers Paid, set TICKS_PER_CALL to "2" for faster exports.
+    "TICKS_PER_CALL": "1",
+    "SCHEDULER_MAX_CALLS": "40",
     "PAYMENTS_ENABLED": "0",
     "POLICIES_APPROVED": "0",
     "SEO_INDEXABLE": "0",
