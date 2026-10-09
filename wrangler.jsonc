@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "parcel-db",
-      "database_id": "00000000-0000-4000-8000-000000000000",
+      "database_id": "360f9100-e1a0-422a-9618-64a9a4ac9ced",
       "migrations_dir": "drizzle"
     }
   ],
@@ -26,12 +26,20 @@
   "services": [{ "binding": "SELF", "service": "parcel" }],
   "triggers": { "crons": ["* * * * *"] },
 
+  // Serve the site on the custom domain (zone parcelexport.com on this account).
+  // www redirects to the apex in worker/index.ts.
+  "routes": [
+    { "pattern": "parcelexport.com", "custom_domain": true },
+    { "pattern": "www.parcelexport.com", "custom_domain": true }
+  ],
+
   "vars": {
     "PUBLIC_SITE_URL": "https://parcelexport.com",
     "BACKGROUND_EXPORTS": "1",
-    // Workers Free: one background tick per request (10 ms CPU, 50 subrequests).
-    // After upgrading to Workers Paid, set TICKS_PER_CALL to "2" for faster exports.
-    "TICKS_PER_CALL": "1",
+    // Workers Paid: two background ticks run concurrently per request.
+    // On Workers Free use "1" (10 ms CPU, 50 subrequests), but large images and
+    // ZIP downloads exceed Free CPU limits, so production runs on Workers Paid.
+    "TICKS_PER_CALL": "2",
     "SCHEDULER_MAX_CALLS": "40",
     "PAYMENTS_ENABLED": "0",
     "POLICIES_APPROVED": "0",
