@@ -26,7 +26,14 @@ const OPERATOR_PATHS = new Set(["/api/worker/tick", "/api/ops"]);
 
 export default {
   async fetch(request: Request, env: ParcelEnv, ctx: ExecutionContext) {
-    const path = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Send www.<domain> to the canonical domain so there is one public address.
+    const canonical = internalOrigin(env.PUBLIC_SITE_URL);
+    if (url.hostname === "www." + new URL(canonical).hostname) {
+      return Response.redirect(canonical + path + url.search, 301);
+    }
 
     if (env.SITE_ACCESS_PASSWORD && !OPERATOR_PATHS.has(path)) {
       if (!(await hasSiteAccess(request, env.SITE_ACCESS_PASSWORD))) {

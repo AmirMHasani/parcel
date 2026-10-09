@@ -27,7 +27,7 @@
   "triggers": { "crons": ["* * * * *"] },
 
   "vars": {
-    "PUBLIC_SITE_URL": "https://parcel.example.workers.dev",
+    "PUBLIC_SITE_URL": "https://parcelexport.com",
     "BACKGROUND_EXPORTS": "1",
     "PAYMENTS_ENABLED": "0",
     "POLICIES_APPROVED": "0",
