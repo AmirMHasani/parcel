@@ -19,7 +19,7 @@ Local development: put the same secret names in an untracked `.dev.vars`, run `p
 
 ### Pre-launch privacy gate
 
-While `SITE_ACCESS_PASSWORD` is set, every page asks for a browser password (any username). Operator endpoints (`/api/worker/tick`, `/api/ops`) keep their own bearer authorization. Pages are also marked noindex while the gate is on. Delete the secret (`wrangler secret delete SITE_ACCESS_PASSWORD`) only after public launch is approved.
+While `SITE_ACCESS_PASSWORD` is set, every page shows a simple password page (a cookie remembers the browser for 30 days; HTTP Basic credentials with any username also work for scripts). Operator endpoints (`/api/worker/tick`, `/api/ops`) keep their own bearer authorization. Pages are also marked noindex while the gate is on. Delete the secret (`wrangler secret delete SITE_ACCESS_PASSWORD`) only after public launch is approved.
 
 ## Background processing
 

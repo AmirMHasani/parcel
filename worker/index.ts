@@ -37,16 +37,8 @@ export default {
     }
 
     if (env.SITE_ACCESS_PASSWORD && !OPERATOR_PATHS.has(path)) {
-      if (!(await hasSiteAccess(request, env.SITE_ACCESS_PASSWORD))) {
-        return new Response("This site is not public yet.", {
-          status: 401,
-          headers: {
-            "WWW-Authenticate": 'Basic realm="Parcel preview", charset="UTF-8"',
-            "Cache-Control": "no-store",
-            "X-Robots-Tag": "noindex, nofollow",
-          },
-        });
-      }
+      const gate = await previewGate(request, url, env.SITE_ACCESS_PASSWORD);
+      if (gate) return gate;
     }
 
     const response = await handler.fetch(request, env, ctx);
@@ -133,7 +125,56 @@ function internalOrigin(publicUrl?: string) {
   return "https://parcel.internal";
 }
 
-async function hasSiteAccess(request: Request, password: string) {
+// Pre-launch gate: a plain password page that sets a cookie (works in every
+// browser and in-app viewer). HTTP Basic credentials are also accepted so
+// scripts and command-line checks can pass the gate.
+const PREVIEW_COOKIE = "parcel_preview";
+const PREVIEW_LOGIN = "/__preview-login";
+
+async function previewGate(request: Request, url: URL, password: string): Promise<Response | null> {
+  const expected = await digest("parcel-preview|" + password);
+  const cookie = (request.headers.get("cookie") || "")
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(PREVIEW_COOKIE + "="));
+  if (cookie && cookie.slice(PREVIEW_COOKIE.length + 1) === expected) return null;
+  if (await hasBasicAccess(request, password)) return null;
+
+  if (url.pathname === PREVIEW_LOGIN && request.method === "POST") {
+    const form = await request.formData().catch(() => null);
+    const supplied = String(form?.get("password") || "");
+    const next = safeNext(String(form?.get("next") || "/"));
+    if ((await digest(supplied)) === (await digest(password))) {
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: next,
+          "Set-Cookie": `${PREVIEW_COOKIE}=${expected}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+    return previewPage(next, true);
+  }
+  return previewPage(safeNext(url.pathname + url.search), false);
+}
+
+function safeNext(value: string) {
+  return value.startsWith("/") && !value.startsWith("//") && !value.startsWith(PREVIEW_LOGIN) ? value : "/";
+}
+
+function previewPage(next: string, wrong: boolean) {
+  const escaped = next.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Parcel preview</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:#f6f5f0;color:#1d2a22}form{background:#fff;padding:32px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.12);width:min(360px,calc(100vw - 32px));box-sizing:border-box}h1{font-size:22px;margin:0 0 4px}p{margin:0 0 20px;color:#55635a}label{display:block;font-weight:600;margin-bottom:6px}input{width:100%;box-sizing:border-box;font-size:16px;padding:10px 12px;border:1px solid #c9cfc9;border-radius:8px}button{margin-top:16px;width:100%;font-size:16px;padding:11px;border:0;border-radius:8px;background:#37694c;color:#fff;font-weight:600;cursor:pointer}.err{color:#a3261b;margin:12px 0 0}</style></head>
+<body><form method="post" action="${PREVIEW_LOGIN}"><h1>parcel.</h1><p>This site is not public yet. Enter the preview password to continue.</p><label for="pw">Preview password</label><input id="pw" name="password" type="password" autocomplete="current-password" required autofocus><input type="hidden" name="next" value="${escaped}">${wrong ? '<p class="err">That password is not right. Try again.</p>' : ""}<button type="submit">Continue</button></form></body></html>`;
+  return new Response(html, {
+    status: 401,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
+  });
+}
+
+async function hasBasicAccess(request: Request, password: string) {
   const header = request.headers.get("authorization") || "";
   if (!header.startsWith("Basic ")) return false;
   let decoded = "";
