@@ -1,0 +1,38 @@
+// Cloudflare Workers configuration for Parcel.
+// Non-secret settings live here (they are re-applied on every deploy).
+// Secrets are set with `wrangler secret put NAME` and never committed:
+//   PARCEL_WORKER_SECRET, EXPORT_SIGNING_SECRET, SITE_ACCESS_PASSWORD (pre-launch gate),
+//   STRIPE_SECRET_KEY, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, RESEND_API_KEY (optional).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "parcel",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "parcel-db",
+      "database_id": "00000000-0000-4000-8000-000000000000",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "parcel-exports" }],
+
+  // The scheduler calls back into this same Worker so each background tick
+  // runs as its own invocation (see worker/index.ts).
+  "services": [{ "binding": "SELF", "service": "parcel" }],
+  "triggers": { "crons": ["* * * * *"] },
+
+  "vars": {
+    "PUBLIC_SITE_URL": "https://parcel.example.workers.dev",
+    "BACKGROUND_EXPORTS": "1",
+    "PAYMENTS_ENABLED": "0",
+    "POLICIES_APPROVED": "0",
+    "SEO_INDEXABLE": "0",
+    "PAYPAL_ENV": "sandbox",
+    "SUPPORT_EMAIL": ""
+  }
+}

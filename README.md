@@ -2,15 +2,30 @@
 
 Upload a Shopify CSV, configure filenames and create ZIPs with original image bytes and manifests. The customer interface uses saved background exports only. Saved background exports use D1 for job state and R2 for images and ZIP parts.
 
-## Background processing and launch gate
+## Hosting and deployment (Cloudflare Workers)
 
-`worker/runner.py` is a dependency-free Python runner. Schedule `python worker/runner.py` once per minute on an independent host. Set PARCEL_SITE_URL and PARCEL_WORKER_SECRET; owner-private Sites also require PARCEL_SITE_ACCESS_TOKEN. Keep credentials in host secrets, never source control. Renew private-site access credentials when required. A failed runner invocation exits nonzero for host monitoring.
+Parcel runs on the owner's Cloudflare account as one Worker named `parcel` (configured in `wrangler.jsonc`) with a D1 database (`parcel-db`, binding `DB`) for job state and an R2 bucket (`parcel-exports`, binding `BUCKET`) for images and ZIP parts. GitHub (`AmirMHasani/parcel`) is the source of truth; pushing to GitHub does not deploy by itself. Earlier versions ran on ChatGPT Sites with an external Render runner; that hosting is retired (see docs/DEBUGGING-PHASES.md for the historical record).
 
-Configure the same PARCEL_WORKER_SECRET in Sites. Set BACKGROUND_EXPORTS=1 only after the scheduled runner is connected. The UI additionally requires a heartbeat within three minutes. Stripe Checkout requires STRIPE_SECRET_KEY and a healthy enabled background runner. EXPORT_SIGNING_SECRET is required for signed downloads and encrypted notification requests. Environment changes require deployment.
+Deploy from a clean checkout:
+
+1. `pnpm install --frozen-lockfile`
+2. `pnpm test && pnpm typecheck`
+3. `pnpm db:migrate:remote` (applies any new `drizzle/*.sql` migrations to D1)
+4. `pnpm deploy` (builds with vinext and runs `wrangler deploy`)
+
+Wrangler needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment (or `wrangler login`). Non-secret settings live in `wrangler.jsonc` `vars` and are re-applied on every deploy. Secrets are set once with `wrangler secret put NAME` and are never committed: `PARCEL_WORKER_SECRET`, `EXPORT_SIGNING_SECRET`, `STRIPE_SECRET_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, optional `RESEND_API_KEY`, and the pre-launch gate `SITE_ACCESS_PASSWORD`.
+
+Local development: put the same secret names in an untracked `.dev.vars`, run `pnpm db:migrate:local`, then `pnpm dev`. Trigger the scheduler locally with `curl http://localhost:5173/cdn-cgi/handler/scheduled`.
+
+### Pre-launch privacy gate
+
+While `SITE_ACCESS_PASSWORD` is set, every page asks for a browser password (any username). Operator endpoints (`/api/worker/tick`, `/api/ops`) keep their own bearer authorization. Pages are also marked noindex while the gate is on. Delete the secret (`wrangler secret delete SITE_ACCESS_PASSWORD`) only after public launch is approved.
+
+## Background processing
+
+A Cloudflare Cron Trigger fires every minute. `worker/index.ts` `scheduled()` sends authorized POSTs to `/api/worker/tick` through the `SELF` service binding, so each tick runs as its own invocation with its own CPU, memory and subrequest budget, and keeps ticking for up to 50 seconds while work remains. It then reads `/api/ops`; any operator alert marks the scheduled run as failed in the Cloudflare dashboard and Workers logs. BACKGROUND_EXPORTS=1 enables new exports, and the UI additionally requires a worker heartbeat within three minutes. EXPORT_SIGNING_SECRET is required for signed downloads and encrypted notification requests.
 
 Each worker HTTP invocation runs two leased ticks concurrently. Each tick processes one image or internal ZIP segment; ZIP packing runs exclusively. Jobs rotate by next_run for fair scheduling. Saved images and result rows survive runner restarts. Expired leases are reclaimable, counters reconcile after interrupted commits, and saved images are reused. The browser never drives the job. Recovery links contain a secret capability: anyone with that link can access the job. Keep them private. Local storage remembers the most recent export.
-
-Background processing is enabled with the Render runner parcel-export-runner (crn-db32evrtqb8s73dup0mg), running once per minute in Virginia. Sites stores job state and files; Render independently drives processing. A scheduled run completed a four-image real Allbirds export without local worker calls on October 7, 2026.
 
 ## Protections and limits
 
@@ -30,11 +45,11 @@ Transient failures retry automatically. Partial/failed exports support two user 
 
 ## Operations
 
-GET /api/ops with Authorization: Bearer PARCEL_WORKER_SECRET returns worker heartbeat, job counts, recent errors, refund/review cases and global usage. Private sites additionally require their Sites access header. Check heartbeat age, failed jobs, pending refunds and review cases. Error events also emit structured Worker logs. Configure independent host alerts for runner failures; an operator must review recorded cases. Error details are truncated and URLs redacted. Events expire after seven days when cleanup runs; job metadata is retained for payment/support reconciliation. No automated metadata deletion is configured.
+GET /api/ops with Authorization: Bearer PARCEL_WORKER_SECRET returns worker heartbeat, job counts, recent errors, refund/review cases and global usage. Check heartbeat age, failed jobs, pending refunds and review cases. Error events also emit structured Worker logs. Watch failed Cron events in the Cloudflare dashboard (Workers → parcel → Settings → Triggers / Logs); an operator must review recorded cases. Error details are truncated and URLs redacted. Events expire after seven days when cleanup runs; job metadata is retained for payment/support reconciliation. No automated metadata deletion is configured.
 
 ## Verification
 
-Run `node --test tests/*.test.mjs`, `npx tsc --noEmit` and the Sites build helper. Tests exercise real SQLite migrations with mocked object storage and Stripe: quota atomicity, capability isolation, worker restart, interrupted writes, partial retries, expiry, refunds, CSV compatibility and ZIP integrity. These are not a substitute for live Stripe or browser click-through tests.
+Run `pnpm test`, `pnpm typecheck` and `pnpm build`; GitHub Actions runs the same three checks on every push to main and every pull request (.github/workflows/ci.yml). Tests exercise real SQLite migrations with mocked object storage and Stripe: quota atomicity, capability isolation, worker restart, interrupted writes, partial retries, expiry, refunds, CSV compatibility and ZIP integrity. These are not a substitute for live Stripe or browser click-through tests.
 
 The public sample contains ten actual Allbirds storefront products and fifty image URLs collected October 7, 2026. The homepage includes the CSV format guide. Legacy and current Shopify headers are accepted. Earlier HTTP testing downloaded all fifty images and validated ZIP CRCs; image URLs may change.
 
@@ -42,13 +57,9 @@ The public sample contains ten actual Allbirds storefront products and fifty ima
 
 Payment activation now requires PAYMENTS_ENABLED=1 in addition to Stripe credentials and worker health. Leave this at 0 until actual test-mode checkout, cancellation and refund verification pass. Concurrent job actions share the worker lease; retry cleanup and its state transition commit atomically. Idempotent creation survives client IP changes, and expired attempts cannot be reused. Global ZIP egress is capped at 5 GB/day (GLOBAL_DAILY_EGRESS); persisted errors are capped at 1,000/day.
 
-The runner refuses HTTP redirects to prevent forwarding credentials to a sign-in or unrelated host. It checks operator metrics after each run and exits nonzero for stalled processing, refund review or delayed refunds, making those failures visible in Render run history. Configure Render account notification delivery and monitor run history; Transactional ready notifications are sent only when Resend is configured and a user enters an address.
+The scheduler refuses HTTP redirects and requires JSON responses. It checks operator metrics after each run and fails the scheduled run for stalled processing, refund review or delayed refunds, making those failures visible in the Cloudflare dashboard. Transactional ready notifications are sent only when Resend is configured and a user enters an address.
 
-The prepared Render runner configuration uses Render's official Flask example solely as a Python runtime scaffold, with a no-op build and automatic deploys disabled. Parcel's exact runner source is supplied as the isolated Python start command, and is version-controlled here. The example application and its dependencies are not run. After editing runner.py, update the Render start command to the newly encoded source. Site credentials are stored only in Render environment secrets. Private Sites access credentials must remain valid; any access failure causes a failed run and the background UI becomes unavailable after three minutes.
-
-Launch scope: free background exports can be enabled after successful unattended verification. Paid commercial launch remains blocked on real Stripe credentials/tests, an operator support contact and refund review procedure, and user-approved public access. Browser click-through remains unverified in this environment. Do not describe the current owner-private deployment as a public commercial launch.
-
-Credential storage in Render was explicitly approved by the owner on October 7, 2026. Render is deployed and BACKGROUND_EXPORTS=1. Paid exports remain disabled.
+Launch scope: paid commercial launch remains blocked on real Stripe/PayPal sandbox tests, an operator support contact and refund review procedure, and owner-approved public access. Do not describe a password-gated deployment as a public commercial launch.
 
 ## Customer pages and remaining launch work
 

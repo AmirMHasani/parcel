@@ -36,10 +36,12 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+*.tsbuildinfo
 /dist/
 /.wrangler/
-# Checkout-local execution profile and tool state; never publish them.
+# Local tool state; never publish it.
 /.sites-runtime/
+/.dev.vars*
 /.agents/
 /.codex/
 /outputs/

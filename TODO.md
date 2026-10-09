@@ -3,6 +3,8 @@
 Updated: October 9, 2026 (America/New_York).
 Reviewed baseline: GitHub `6aa20c8`, imported from Sites source `37da912`.
 
+**Hosting decision (October 9, 2026):** Amir chose to move Parcel off ChatGPT Sites to his own Cloudflare account (Workers + D1 + R2), with Cloudflare Cron replacing the Render runner, a custom domain, and both Stripe and PayPal at launch. The port keeps all 89 automated tests passing and was verified locally end to end (real Shopify images → valid ZIP). Item references below to Sites runtime secrets now mean `wrangler secret put`, and references to Render now mean the Cloudflare Cron Trigger.
+
 This is the current prioritized checklist. Use the dated records in [DEBUGGING-PHASES.md](docs/DEBUGGING-PHASES.md) for historical evidence and [launch-runbook.md](docs/launch-runbook.md) for operating instructions. Older unchecked items in [OWNER-AND-CODEX-TODO.md](docs/OWNER-AND-CODEX-TODO.md) may have been superseded.
 
 ## Status and scope
@@ -40,10 +42,10 @@ Acceptance evidence for every C item: date, source/deployed version, environment
 
 ## P1 — engineering and documentation follow-up
 
-- [ ] **C10 — Add GitHub CI.** No tracked GitHub Actions workflow exists in the reviewed snapshot. Add a clean-checkout dependency install, automated tests, TypeScript check, and production build using compatible Node/pnpm versions. Demonstrate one successful GitHub run; do not depend on local Sites credentials.
+- [x] **C10 — Add GitHub CI.** Added `.github/workflows/ci.yml` (install, tests, TypeScript check, build) on October 9, 2026; mark accepted after the first green run. No tracked GitHub Actions workflow exists in the reviewed snapshot. Add a clean-checkout dependency install, automated tests, TypeScript check, and production build using compatible Node/pnpm versions. Demonstrate one successful GitHub run; do not depend on local Sites credentials.
 - [ ] **C11 — Reconcile outdated documentation.** The launch runbook still says email entry is available while delivery is unconfigured; the current UI hides it and asks users to save a private return link. Update that section and superseded browser-tool/verification notes. Preserve historical evidence as dated records.
-- [ ] **C12 — Establish source/deployment ownership.** GitHub currently contains a source snapshot, not the prior Sites commit history. Document which repository owns future edits and how GitHub changes reach Sites and the separately scheduled Render runner. Do not imply GitHub pushes automatically deploy either service.
-- [ ] **C13 — Repository hygiene.** Stop tracking generated `tsconfig.tsbuildinfo` and add it to `.gitignore`. Keep runtime secrets, private recovery links, customer exports, and provider records out of commits.
+- [x] **C12 — Establish source/deployment ownership.** Resolved October 9, 2026: GitHub owns the source; deploys go to Cloudflare with `pnpm deploy` (README → Hosting and deployment). Original note: GitHub currently contains a source snapshot, not the prior Sites commit history. Document which repository owns future edits and how GitHub changes reach Sites and the separately scheduled Render runner. Do not imply GitHub pushes automatically deploy either service.
+- [x] **C13 — Repository hygiene.** `tsconfig.tsbuildinfo` untracked and ignored; `.dev.vars` ignored. Original note: Stop tracking generated `tsconfig.tsbuildinfo` and add it to `.gitignore`. Keep runtime secrets, private recovery links, customer exports, and provider records out of commits.
 - [ ] **C14 — Release and recovery procedure.** Record the exact tested source/version, migration compatibility, runtime configuration names, runner version, rollback steps, and responsible operator. Re-run affected checks after any repair discovered during acceptance.
 
 ## Open investigations — not confirmed current defects

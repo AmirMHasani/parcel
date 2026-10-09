@@ -2,9 +2,7 @@
 
 ## Current state
 
-Owner-private site: https://shopify-image-exporter.amirmh.chatgpt.site.
-Render runner: https://dashboard.render.com/cron/crn-db32evrtqb8s73dup0mg, My Workspace, Virginia, starter, once per minute.
-BACKGROUND_EXPORTS=1; PAYMENTS_ENABLED=0. Privacy, terms, pricing, support, and no-refund pages are complete. A dedicated support email is still needed; no personal email has been published. No email or payment credentials are configured. Do not describe these integrations as activated until the checks below pass.
+Moving to Cloudflare (October 9, 2026): Worker `parcel` on Amir's Cloudflare account, D1 `parcel-db`, R2 `parcel-exports`, Cron Trigger every minute (replaces Render). While testing, the whole site sits behind the SITE_ACCESS_PASSWORD browser password. BACKGROUND_EXPORTS=1; PAYMENTS_ENABLED=0 until sandbox acceptance. Runtime secrets are managed with `wrangler secret put`; non-secret settings in `wrangler.jsonc` vars. The previous owner-private ChatGPT Sites deployment and its Render cron (crn-db32evrtqb8s73dup0mg) can be suspended once the Cloudflare deployment is verified. Do not describe integrations as activated until the checks below pass.
 
 ## Ready results and concurrency
 
@@ -16,10 +14,10 @@ The interface estimates remaining image-check time from observed progress betwee
 
 ## Email activation
 
-Use a Resend account and a verified sending domain. Add Sites runtime secrets/configuration:
+Use a Resend account and a verified sending domain. Add Cloudflare secrets (`wrangler secret put`) and `wrangler.jsonc` vars:
 - RESEND_API_KEY (secret, send-only scope).
 - EMAIL_FROM (verified address, optionally with display name).
-- PUBLIC_SITE_URL=https://shopify-image-exporter.amirmh.chatgpt.site.
+- PUBLIC_SITE_URL=the public https origin (custom domain once attached).
 
 Deploy to apply configuration. Optional email entry is editable before processing. Requests are encrypted and queued even while delivery awaits configuration, with an explicit warning to keep the return link. The sender runs only when configured and never sends expired jobs. Email is transactional and carries a results link, never a ZIP attachment or a payment bypass. The address/key and frozen message are encrypted with EXPORT_SIGNING_SECRET in D1. The outbox leases sends, uses a stable Resend idempotency key and identical retry payload, and retries transient failures up to six attempts within the export window. Successful provider acceptance clears sensitive payloads. Expiry deletes outbox rows. A provider acceptance is not proof of inbox delivery. No marketing emails are sent.
 
