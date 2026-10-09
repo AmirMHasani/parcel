@@ -45,9 +45,9 @@
     "TICKS_PER_CALL": "2",
     "SCHEDULER_MAX_CALLS": "40",
     "PAYMENTS_ENABLED": "0",
-    "POLICIES_APPROVED": "0",
-    "SEO_INDEXABLE": "0",
+    "POLICIES_APPROVED": "1",
+    "SEO_INDEXABLE": "1",
     "PAYPAL_ENV": "sandbox",
-    "SUPPORT_EMAIL": ""
+    "SUPPORT_EMAIL": "support@parcelexport.com"
   }
 }

@@ -2,8 +2,9 @@ import {pageMetadata} from '../../lib/seo';
 import PolicyPage from '../../components/PolicyPage';
 export function generateMetadata(){return pageMetadata('/terms','Terms of Use','Terms for using Parcel’s Shopify image exporter, prepared packages, payments, download access, and no-refund policy.');}
 export default function Terms(){return <PolicyPage title="Terms of use">
-  <p>Effective October 7, 2026.</p>
+  <p>Effective October 9, 2026.</p>
   <p>These terms govern use of Parcel’s image-export service. By using the service, you agree to these terms and acknowledge the <a href="/privacy">privacy policy</a>. Review the <a href="/refunds">no-refund policy</a> before purchasing an export.</p>
+  <p>Parcel is operated by Lumen Collectives LLC (“we” or “us”). Contact us at <a href="mailto:support@parcelexport.com">support@parcelexport.com</a>.</p>
   <h2>What Parcel provides</h2>
   <p>Parcel reads a Shopify product CSV and retrieves supported public image URLs to produce ZIP files with your chosen filenames, product folders, and optional manifests. It does not connect to your Shopify admin, edit your store, or provide long-term image storage.</p>
   <h2>Your responsibilities</h2>
