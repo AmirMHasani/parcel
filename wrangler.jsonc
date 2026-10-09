@@ -10,6 +10,9 @@
   "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Workers Paid: allow up to 30 s CPU per request (image downloads and ZIP
+  // streaming need far more than the Free plan's 10 ms).
+  "limits": { "cpu_ms": 30000 },
 
   "d1_databases": [
     {
