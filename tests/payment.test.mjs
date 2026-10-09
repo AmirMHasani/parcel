@@ -1,0 +1,7 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {createExportToken,verifyExportToken,requireSameOrigin} from '../lib/payment.mjs';
+const secret='0123456789abcdef'.repeat(4),hash='ab'.repeat(32);
+test('export token verifies against exact manifest',async()=>{let t=await createExportToken(hash,secret,100);assert(await verifyExportToken(t,hash,secret,200));await assert.rejects(verifyExportToken(t,'different',secret,200),/different CSV/);});
+test('tampering and wrong key fail',async()=>{let t=await createExportToken(hash,secret,100);await assert.rejects(verifyExportToken(t,hash,'different'.repeat(8),200),/Invalid/);await assert.rejects(verifyExportToken(t.slice(0,-1)+(t.endsWith('a')?'b':'a'),hash,secret,200),/Invalid/);});
+test('expiry is enforced at two hours',async()=>{let t=await createExportToken(hash,secret,100);await assert.rejects(verifyExportToken(t,hash,secret,7200100),/expired/);});
+test('malformed tokens cannot authorize exports',async()=>{for(const t of [undefined,'', 'test', 'a'.repeat(2000)])await assert.rejects(verifyExportToken(t,hash,secret));});
+test('cross-site mutations rejected',()=>{assert.throws(()=>requireSameOrigin(new Request('https://parcel.test/api/checkout',{headers:{Origin:'https://evil.test'}})),/origin/);assert.throws(()=>requireSameOrigin(new Request('https://parcel.test/api/checkout',{headers:{'sec-fetch-site':'cross-site'}})),/origin/);requireSameOrigin(new Request('https://parcel.test/api/checkout',{headers:{Origin:'https://parcel.test'}}));});

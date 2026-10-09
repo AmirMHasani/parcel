@@ -1,0 +1,2 @@
+import {getJob,jobAction} from '../../../../lib/jobs';import {boundedJSON,respondError} from '../../../../lib/guard';import {requireSameOrigin} from '../../../../lib/payment.mjs';
+export async function POST(request:Request){try{requireSameOrigin(request);const body=await boundedJSON(request,4000);return Response.json(await jobAction(request,await getJob(request,body.id),body.action,body),{headers:{'Cache-Control':'no-store'}});}catch(e){return respondError(e);}}

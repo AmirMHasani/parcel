@@ -1,0 +1,1 @@
+ALTER TABLE `exports` ADD `refund_id` text;

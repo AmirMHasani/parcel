@@ -1,0 +1,2 @@
+import {workerAuth,respondError} from '../../../../lib/guard';import {tick,cleanup} from '../../../../lib/job-worker';
+export async function POST(request:Request){try{await workerAuth(request);await cleanup();const results=await Promise.all([tick(false),tick(false)]);return Response.json({worked:results.some(r=>r.worked),type:results.filter(r=>r.worked).map(r=>r.type).join('+'),concurrency:2},{headers:{'Cache-Control':'no-store'}});}catch(e){return respondError(e);}}
