@@ -55,3 +55,70 @@ Follow `agency-runbook.md` → "Release and rollback". Record here:
 | `AGENCY_ENABLED=1`, `STRIPE_AGENCY_PRICE_ID` set; redeploy | | | |
 | Owner smoke test: subscribe with own card, one export, cancel, dashboard refund, downgrade confirmed | | | |
 | First agency issued `AGENCY-BETA` | | | |
+
+## Local end-to-end evidence (October 10, 2026, branch `644707b`)
+
+Run with `scripts/e2e/agency-e2e.mjs` against the real Worker under `wrangler dev` (local D1/R2), real Shopify images, a
+Chromium browser, and `scripts/e2e/fake-stripe.mjs` standing in for Stripe and Resend. This is evidence for the logic and
+the pages; the staging rows above still need real Stripe (test clocks), Cloudflare throughput and real browsers.
+
+| Check | Row | Result | Detail |
+|---|---|---|---|
+| P1 pricing shows Agency copy verbatim as request-access | 24 (copy) | pass |  |
+| P24-320/pricing no horizontal overflow at 320px /pricing | 24 | pass |  |
+| P24-320/agency no horizontal overflow at 320px /agency | 24 | pass |  |
+| P24-320/agency/account no horizontal overflow at 320px /agency/account | 24 | pass |  |
+| P24-320/agency/recover no horizontal overflow at 320px /agency/recover | 24 | pass |  |
+| P24-390/pricing no horizontal overflow at 390px /pricing | 24 | pass |  |
+| P24-390/agency no horizontal overflow at 390px /agency | 24 | pass |  |
+| P24-390/agency/account no horizontal overflow at 390px /agency/account | 24 | pass |  |
+| P24-390/agency/recover no horizontal overflow at 390px /agency/recover | 24 | pass |  |
+| P25a /agency is noindex | 25 | pass | noindex, nofollow |
+| P25b /agency absent from sitemap, disallowed in robots | 25 | pass |  |
+| P2a checkout created in subscription mode with tax on and Terms consent | 1 | pass | Fake Stripe CheckoutSession cs_1dcf3xq Â· mode subscription Â· price price_1UP3ZaFHwPFv1wgeKHDL6bFg Â· tax tru |
+| P2b code reserved before payment | 1 | pass |  |
+| P2c key shown once after return | 2 | pass |  |
+| P2d account active with 0 of 50 used | 2 | pass | Skip to contentparcel.PricingCSV guideSupportRefundsPrivacyTermsYour Agency accountYour subscription is active |
+| P2e invite code marked used | 2 | pass |  |
+| P3 reused code refused | 3 | pass |  |
+| P4 worker finishes activation for a stranded checkout | 4 | pass | pending → active |
+| P5a exporter shows the agency panel with exports left | 5 | pass | Agency 50 of 50 exports left this billing period. AccountClient name for this ZIP Optional |
+| P5b export is an agency export (amount 0, 1 GB, priority 1, client name, slot) | 5 | pass | {"amount":0,"max_bytes":1000000000,"priority":1,"agency_id":"76009e52-367e-477e-926e-2d4dc4c9cd0a","client_nam |
+| P5c Priority badge visible | 5 | pass |  |
+| P5d worker completes the agency export | 5 | pass | {"state":"complete","completed":3,"failed":0} |
+| P5e results show client-named ZIP and Agency export label | 8 | pass |  |
+| P5f usage counted once | 5 | pass | used=1 |
+| P8 download header carries the client file name | 8 | pass | attachment; filename="acme-store-images.zip" |
+| P6 agency export is first in line ahead of older one-time exports | 6 | pass | agency=1 one-time=2,3 |
+| P7 a one-time export that waited 10 minutes moves ahead of the agency export | 7 | pass | one-time=1 agency=2 |
+| P10 zero-image failure releases the slot | 10 | pass | {"stC":{"state":"failed","completed":0,"usage_slot":0},"usedBefore":1,"usedAfter":1} |
+| P9 cancel before start (via agency key) gives the slot back | 9 | pass | {"status":200,"before":1,"after":1,"row":{"state":"cancelled","usage_slot":0}} |
+| P11 warning at 5 remaining | 11 | pass | {"used":45,"remaining":5,"warning":true} |
+| P12a 51st export refused with reset date and one-time alternative | 12 | pass | You have used all 50 agency exports for this billing period. They reset on November 9. You can still run this  |
+| P12b exporter tells the agency the cap is reached and runs as a normal export | 12 | pass |  |
+| P13 period rollover picked up from Stripe; the export is counted in the new period | 13 | pass | {"status":200,"period_start":1791653332000,"expected":1791653332000,"usage_period":1791653332000,"cycle":{"use |
+| P14 account page shows cancels-on after portal cancellation | 14 | pass |  |
+| P15a ended subscription shows as free with Resubscribe | 15 | pass |  |
+| P15b ended account cannot start agency exports | 15 | pass | Your Agency subscription has ended. Resubscribe from your account page, or run this export at the one-time pri |
+| P15c earlier export still downloadable after the plan ended | 15 | pass |  |
+| P16 resubscribe without a code reactivates the account | 16 | pass |  |
+| P17 past-due account gets 402 update-your-card | 17 | pass | Your subscription payment did not go through. Update your card from your account page to keep exporting. |
+| P17b account page shows payment failed with Update card | 17 | pass |  |
+| P18 exports resume once the card is fixed | 18 | pass |  |
+| P14b Manage billing opens the Stripe portal with the configuration | 14 | pass |  |
+| P19 daily sweep suspends a disputed account | 19 | pass |  |
+| P19b suspended account refused with 403 | 19 | pass |  |
+| P20 rotation issues a new key and kills the old one | 20 | pass |  |
+| P21a recovery email sent with a one-hour link | 21 | pass |  |
+| P21b non-matching email gets the same answer and no email | 21 | pass |  |
+| P21c recovery link issues a new key in a fresh browser; previous key dies; link is single-use | 21 | pass |  |
+| P5g export history lists the client-named export | 5 | see note | ["export-172c51ac-images.zip","export-8f104039-images.zip"] |
+| P5h agency key opens the account's export without its own recovery key | 5 | pass |  |
+| P22 eleven wrong keys from one network end in 429 | 22 | pass |  |
+| P26 ops shows agency accounts and no alerts | 26 | pass | {"enabled":true,"accounts":{"active":2},"suspended":0,"exportsThisPeriod":0,"accountsWithUsage":0,"inviteCodes |
+
+Notes: P5g is expected — after the period rollover in P13, the history lists only the current period's exports. Row 27
+(pause switch) was checked by restarting with `AGENCY_ENABLED=0`: `/agency` shows "not available", agency routes return
+404, the pricing tier is hidden, and a finished agency export still opens with the agency key. Two bugs found and fixed
+during the run: the exporter still offered agency mode at the 50-export cap; the `/agency` summary table rendered badly.
+Screenshots (desktop and 320/390 px) are in the session's `e2e-output` folder.
