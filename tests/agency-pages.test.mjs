@@ -6,6 +6,7 @@ const environment={};globalThis.__parcelEnv=environment;
 const modules=new Map();
 function load(file){file=path.resolve(root,file);if(modules.has(file))return modules.get(file);let source=fs.readFileSync(file,'utf8');source=source.replace(/from\s+(['"])([^'"]+)\1/g,(match,q,spec)=>{if(spec==='cloudflare:workers')return 'from '+JSON.stringify('data:text/javascript,export const env=globalThis.__parcelEnv;');if(spec.startsWith('.')){let p=path.resolve(path.dirname(file),spec);if(p.endsWith('.mjs'))return 'from '+JSON.stringify('file://'+p);if(!p.endsWith('.ts'))p+='.ts';return 'from '+JSON.stringify(load(p));}return match;});const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;const url='data:text/javascript;base64,'+Buffer.from(js).toString('base64');modules.set(file,url);return url;}
 const agency=await import(load('lib/agency.ts')),jobs=await import(load('lib/jobs.ts'));
+const ops=await import(load('app/api/ops/route.ts'));
 const recover=await import(load('app/api/agency/recover/route.ts')),redeem=await import(load('app/api/agency/recover/redeem/route.ts')),exportsRoute=await import(load('app/api/agency/exports/route.ts')),config=await import(load('app/api/config/route.ts'));
 const client=await import('../lib/client-api.mjs');
 function statement(sql,args=[]){return {bind(...values){return statement(sql,values);},async first(){return sqlite.prepare(sql).get(...args)||null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},run(){const r=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};}
@@ -83,4 +84,24 @@ test('browser key storage helpers validate, save, read and build headers',()=>{
  assert.deepEqual({key:client.readAgency(read).key,pending:client.readAgency(read).pending},{key:'b'.repeat(64),pending:true});
  write(client.AGENCY_STORAGE,JSON.stringify({key:'short'}));assert.equal(client.readAgency(read),null);
  client.clearAgency(remove);assert.equal(client.readAgency(read),null);
+});
+
+test('ops reports agency health and raises alerts for stale checkouts and repeated errors',async()=>{
+ process.env.PARCEL_WORKER_SECRET='worker-secret';const auth={authorization:'Bearer worker-secret'};
+ const read=async()=>{const r=await ops.GET(get('/api/ops',auth));assert.equal(r.status,200);return r.json();};
+ let o=await read();assert.equal(o.agency.enabled,true);assert.deepEqual(o.agency.accounts,{});assert.equal(o.alerts.agencyPendingStale,0);assert.equal(o.alerts.agencyErrors,0);
+ const a=await agency.createAccount({status:'active',...period()}),b=await agency.createAccount({status:'past_due',...period()}),c=await agency.createAccount();
+ sqlite.prepare('UPDATE agency_accounts SET suspended=1 WHERE id=?').run(b.id);
+ sqlite.prepare('INSERT INTO invite_codes(code,created) VALUES(?,?),(?,?)').run('A-CODE-1',1,'A-CODE-2',1);sqlite.prepare('UPDATE invite_codes SET account_id=?,used_at=1 WHERE code=?').run(a.id,'A-CODE-1');
+ const start=sqlite.prepare('SELECT period_start FROM agency_accounts WHERE id=?').get(a.id).period_start;sqlite.prepare('INSERT INTO usage_cycles(account_id,period_start,used) VALUES(?,?,7),(?,?,99)').run(a.id,start,a.id,start-1); // the 99 belongs to an old period
+ o=await read();assert.deepEqual(o.agency.accounts,{active:1,past_due:1,pending:1});assert.equal(o.agency.suspended,1);assert.equal(o.agency.exportsThisPeriod,7);assert.deepEqual(o.agency.inviteCodes,{unused:1,used:1});
+ // a paid checkout that never finished activating for 10 minutes is an alert; a fresh one is not
+ sqlite.prepare("UPDATE agency_accounts SET stripe_session='cs_1',updated=? WHERE id=?").run(Date.now()-5*60000,c.id);o=await read();assert.equal(o.alerts.agencyPendingStale,0);
+ sqlite.prepare("UPDATE agency_accounts SET updated=? WHERE id=?").run(Date.now()-11*60000,c.id);o=await read();assert.equal(o.alerts.agencyPendingStale,1);
+ // three agency errors in a day alert; two do not
+ for(let i=0;i<2;i++)sqlite.prepare("INSERT INTO error_events(id,code,detail,created) VALUES(?,?,?,?)").run('e'+i,'agency_sweep_error','x',Date.now());o=await read();assert.equal(o.alerts.agencyErrors,0);
+ sqlite.prepare("INSERT INTO error_events(id,code,detail,created) VALUES(?,?,?,?)").run('e9','agency_activation_error','x',Date.now());o=await read();assert.equal(o.alerts.agencyErrors,3);
+ // a database without the agency tables does not break ops
+ sqlite.exec('DROP TABLE usage_cycles');o=await read();assert.match(o.agency.unavailable,/usage_cycles/);assert.equal(o.alerts.agencyPendingStale,0);
+ delete process.env.PARCEL_WORKER_SECRET;
 });

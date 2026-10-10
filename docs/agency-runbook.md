@@ -126,3 +126,56 @@ page and emails are not white-labelled (see the plan's decisions table).
 - `/terms`, `/refunds` and `/support` gained Agency sections (monthly renewal, cancel anytime with access to month end,
   no partial-month refunds, 50-export fair use with one-time prices beyond, white-label = file output only, key is a
   secret, disputes suspend). **Amir approves this wording before the release.**
+
+## Operator view
+
+`GET /api/ops` (worker secret) now has an `agency` block: accounts by status, suspended count, exports used this
+period, invite codes unused/used. Two agency alerts fail the scheduled run like the existing ones:
+`agencyPendingStale` (a paid checkout still pending after 10 minutes — look at the account's Stripe session) and
+`agencyErrors` (3 or more `agency_*` errors in 24 hours — read `errors` in the same response). If the agency tables are
+missing, the block says `unavailable` instead of breaking ops.
+
+## Handle a dispute
+
+The daily sweep suspends an account automatically when any charge for its Stripe customer is disputed. Suspended
+accounts cannot export, recover a key or resubscribe. In Stripe, respond to the dispute with the export records (the
+account's exports and their timestamps from `/api/agency/exports`, invoice and Terms consent from Checkout). When the
+dispute is won and you want the account back: `UPDATE agency_accounts SET suspended=0 WHERE id='<id>'`. Policy for
+repeat disputes is open (`agency-after-phase-6.md`, row 14).
+
+## Rotate the Stripe key
+
+`CLOUDFLARE_ENV=staging pnpm exec wrangler secret put STRIPE_SECRET_KEY` (staging) or `pnpm exec wrangler secret put
+STRIPE_SECRET_KEY` from `D:\parcel-deploy` (production). The new restricted key needs: Checkout Sessions (write),
+Customers (write), Subscriptions (read), Billing Portal (write), Products and Prices (read), Charges (read), Invoices
+(read), plus whatever the one-time flow already used (Checkout Sessions, Payment Intents, Refunds). Roll the old key
+in the Stripe dashboard only after the new one is live.
+
+## Release and rollback (the single production release)
+
+Production never receives the agency work in pieces. When `docs/agency-verification.md` rows 1–27 have passed on a
+freshly rebuilt staging:
+
+1. Tag the branch `agency-rc1`. Rehearse once more: `pnpm exec wrangler d1 export parcel-db --remote --output
+   prod-copy.sql`, load into a local SQLite file, apply `drizzle/0005_agency_plan.sql`, confirm existing rows are intact.
+   Delete the copy.
+2. Merge `agency` into `main` (from a clean clone, not `D:\parcel`), push, wait for CI to be green.
+3. Stripe live: install the new restricted key (above), create Product "Parcel Agency" and the $49/month Price, set the
+   Terms URL, save the Customer Portal configuration, set Smart Retries to cancel after the final retry, enable
+   customer emails. Keep the live price id handy.
+4. From `D:\parcel-deploy`: `git pull`, `git status` clean on `main`, then `pnpm db:migrate:remote`. Today's code keeps
+   running against the new columns.
+5. `pnpm build && pnpm exec wrangler versions upload` — the new version exists but gets no traffic. Then
+   `pnpm exec wrangler versions deploy` and send a small share of traffic to it; watch the dashboard and
+   `/api/ops` for a few minutes; move to 100 %. `AGENCY_ENABLED` is still `0`, so this version behaves exactly like the
+   old one.
+6. Set `AGENCY_ENABLED` to `1` and `STRIPE_AGENCY_PRICE_ID` to the live price id in `wrangler.jsonc` (production
+   `vars`), commit to `main`, `pnpm run deploy` from `D:\parcel-deploy`.
+7. Smoke test with the owner's own card: code → subscribe → one export → cancel in the portal → refund in the Stripe
+   dashboard → confirm the account shows the cancellation. Record it in `agency-verification.md`.
+8. Issue `AGENCY-BETA` to the first agency. For two weeks watch queue latency against the Phase 4 target, usage per
+   account, Stripe events, Cron failures and support mail.
+
+Rollback at any step: `pnpm exec wrangler rollback` returns to the previous version in one command; the migration is
+additive and needs no undo. If only the agency logic misbehaves, set `AGENCY_ENABLED=0` and redeploy — faster, and
+finished agency exports stay downloadable.
