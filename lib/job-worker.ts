@@ -6,6 +6,7 @@ import {emailTick} from './notifications';
 import {paypal,confirmPayPal} from './paypal';
 import {stripe} from './server';
 import {zipWriter,csv,crc32} from './export.mjs';
+import {maxConcurrentJobs,maxConcurrentPacking} from './capacity';
 const VERSION='parcel-worker-v3-single-zip';
 async function update(job:any,sql:string,args:any[]=[]){return db().prepare(sql+' WHERE id=? AND lease_owner=?').bind(...args,job.id,job.lease_owner).run();}
 export async function tick(clean=true){const now=Date.now();if(clean)await cleanup();await db().prepare("INSERT INTO worker_health(id,seen,version) VALUES('runner',?,?) ON CONFLICT(id) DO UPDATE SET seen=excluded.seen,version=excluded.version").bind(now,VERSION).run();
@@ -26,7 +27,11 @@ export async function tick(clean=true){const now=Date.now();if(clean)await clean
  }catch(e:any){await update(payment,'UPDATE exports SET next_run=?',[Date.now()+300000]);await event('payment_confirmation_error',e.message,payment.id);}
  finally{await update(payment,'UPDATE exports SET lease_until=0,lease_owner=NULL');}
  return {worked:true,type:'payment'};}
- const lease=crypto.randomUUID();const job:any=await db().prepare("UPDATE exports SET lease_owner=?,lease_until=? WHERE id=(SELECT id FROM exports WHERE ((state IN ('queued','downloading','packing','awaiting_payment') AND (state!='awaiting_payment' OR session IS NOT NULL)) OR (state IN ('complete','partial') AND session IS NOT NULL AND payment_intent IS NULL)) AND next_run<=? AND lease_until<? AND expires>? AND (SELECT COUNT(*) FROM exports WHERE lease_until>?)<2 AND ((cursor>=total AND state NOT IN ('awaiting_payment','complete','partial') AND (SELECT COUNT(*) FROM exports WHERE lease_until>?)=0) OR ((cursor<total OR state IN ('awaiting_payment','complete','partial')) AND NOT EXISTS(SELECT 1 FROM exports WHERE lease_until>? AND cursor>=total AND state IN ('queued','downloading','packing')))) ORDER BY next_run,created LIMIT 1) AND lease_until<? RETURNING *").bind(lease,now+120000,now,now,now,now,now,now,now).first();if(!job)return {worked:false};
+ // At most MAX_CONCURRENT_JOBS exports hold a lease (are being processed) at once
+ // across the service, and at most MAX_CONCURRENT_PACKING of them build ZIPs.
+ // Packing streams from storage, so it runs alongside image downloads instead of
+ // pausing them. Turns rotate by next_run, so waiting exports are not starved.
+ const lease=crypto.randomUUID();const job:any=await db().prepare("UPDATE exports SET lease_owner=?,lease_until=? WHERE id=(SELECT id FROM exports WHERE ((state IN ('queued','downloading','packing','awaiting_payment') AND (state!='awaiting_payment' OR session IS NOT NULL)) OR (state IN ('complete','partial') AND session IS NOT NULL AND payment_intent IS NULL)) AND next_run<=? AND lease_until<? AND expires>? AND (SELECT COUNT(*) FROM exports WHERE lease_until>?)<? AND (cursor<total OR state IN ('awaiting_payment','complete','partial') OR (SELECT COUNT(*) FROM exports WHERE lease_until>? AND cursor>=total AND state IN ('queued','downloading','packing'))<?) ORDER BY next_run,created LIMIT 1) AND lease_until<? RETURNING *").bind(lease,now+120000,now,now,now,now,maxConcurrentJobs(),now,maxConcurrentPacking(),now).first();if(!job)return {worked:false};
  try{if(job.state==='awaiting_payment'||['complete','partial'].includes(job.state)&&job.session){try{await confirmPayment(job);}catch(e:any){await event('payment_confirmation_error',e.message,job.id);}await update(job,'UPDATE exports SET next_run=?',[Date.now()+60000]);return {worked:true,type:'payment'};}
  const obj=await bucket().get(job.manifest);if(!obj)throw Error('Export metadata unavailable.');const manifest:any=await obj.json();
  if(job.cursor<job.total){await processImage(job,manifest);return {worked:true,type:'image',job:job.id};}

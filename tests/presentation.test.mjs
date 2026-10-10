@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {exportPresentation,observedETA} from '../lib/export-presentation.mjs';
+import {exportPresentation,observedETA,queueMessage,busyMessage} from '../lib/export-presentation.mjs';
 import {notificationMessage} from '../lib/notification-message.mjs';
 import {verifyDownload} from '../scripts/verify-download.mjs';
 import {createHash} from 'node:crypto';
@@ -30,4 +30,12 @@ test('delivery verifier rejects HTML, HTTP errors, truncation and equal-size cor
  await assert.rejects(verifyDownload(new Response(null,{status:403}),expected),/403/);
  await assert.rejects(verifyDownload(response(data.subarray(1)),expected),/byte count/);
  await assert.rejects(verifyDownload(response(Buffer.alloc(data.length)),expected),/SHA-256/);
+});
+test('queued exports show their place in line and an estimated wait instead of a silent wait',()=>{
+ assert.equal(queueMessage({state:'queued',queuePosition:1,startSeconds:0,etaSeconds:150}),'You’re next in line · estimated start: under a minute · ready in about 3 min. You can leave this page.');
+ assert.equal(queueMessage({state:'queued',queuePosition:4,startSeconds:130,etaSeconds:600}),'You’re #4 in line · estimated start: about 3 min · ready in about 10 min. You can leave this page.');
+ assert.equal(queueMessage({state:'queued',queuePosition:2,busy:false,startSeconds:0,etaSeconds:90}),'Starting now · ready in about 2 min. You can leave this page.');
+ assert.equal(queueMessage({state:'queued'}),null);assert.equal(queueMessage({state:'downloading',queuePosition:2}),null);
+ assert.match(busyMessage({state:'downloading',busy:true,etaSeconds:400}),/taking turns.*about 7 min/);
+ assert.equal(busyMessage({state:'downloading',busy:false,etaSeconds:400}),null);
 });
