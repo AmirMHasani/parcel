@@ -162,3 +162,15 @@ test('portal needs a Stripe customer; resubscribe reuses the customer and needs 
  stripeState.sessionAccount=id;stripeState.sessionStatus='expired';
  assert.equal((await sessionRoute.GET(request(key,{method:'GET'}))).status,410);assert.equal(row(id).status,'free');
 });
+
+test('Stripe Tax and an explicit portal configuration are passed through when configured',async()=>{
+ process.env.STRIPE_TAX='1';process.env.STRIPE_PORTAL_CONFIG_ID='bpc_fixture';
+ await checkoutRoute.POST(json(undefined,{code:'AGENCY-BETA'}));
+ let create=calls.find(c=>c.url.endsWith('/checkout/sessions'));assert.equal(create.body['automatic_tax[enabled]'],'true');assert.equal(create.body['customer_update[address]'],undefined);
+ const {id,key}=await agency.createAccount({status:'free'});sqlite.prepare("UPDATE agency_accounts SET stripe_customer='cus_1',status_checked_at=? WHERE id=?").run(Date.now(),id);
+ await resubRoute.POST(request(key));create=calls.at(-1);assert.equal(create.body['automatic_tax[enabled]'],'true');assert.equal(create.body['customer_update[address]'],'auto');
+ sqlite.prepare("UPDATE agency_accounts SET status='active' WHERE id=?").run(id);await portalRoute.POST(request(key));assert.equal(calls.at(-1).body.configuration,'bpc_fixture');
+ delete process.env.STRIPE_TAX;delete process.env.STRIPE_PORTAL_CONFIG_ID;
+ sqlite.prepare('INSERT INTO invite_codes(code,created) VALUES(?,?)').run('AGENCY-TWO',Date.now());await checkoutRoute.POST(json(undefined,{code:'AGENCY-TWO'}));
+ const plain=calls.filter(c=>c.url.endsWith('/checkout/sessions')).at(-1);assert.equal(plain.body['automatic_tax[enabled]'],undefined);
+});

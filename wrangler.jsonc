@@ -63,7 +63,11 @@
     "EMAIL_FROM": "Parcel <support@parcelexport.com>",
     // Agency subscription plan: stays "0" in production until the single Agency release (CLAUDE.md).
     "AGENCY_ENABLED": "0",
-    "STRIPE_AGENCY_PRICE_ID": ""
+    "STRIPE_AGENCY_PRICE_ID": "",
+    // Stripe Tax: Amir decided to turn it on; needs Stripe Tax active on the account (head office + registration) first.
+    "STRIPE_TAX": "1",
+    // Live Customer Portal configuration id (bpc_...), created at release; empty = account default.
+    "STRIPE_PORTAL_CONFIG_ID": ""
   },
 
   // Private test copy for payment testing (sandbox/test-mode keys only).
@@ -102,7 +106,11 @@
         "EMAIL_FROM": "Parcel <support@parcelexport.com>",
         // Agency plan is developed and tested here first. Fill STRIPE_AGENCY_PRICE_ID with the TEST-mode price (price_...).
         "AGENCY_ENABLED": "1",
-        "STRIPE_AGENCY_PRICE_ID": ""
+        // Test-mode price and portal configuration created October 10, 2026 (Stripe account "Parcel", test mode).
+        "STRIPE_AGENCY_PRICE_ID": "price_1UP3ZaFHwPFv1wgeKHDL6bFg",
+        // Set to "1" once Stripe Tax is activated in TEST mode (Settings → Tax → head office); until then Checkout would fail.
+        "STRIPE_TAX": "0",
+        "STRIPE_PORTAL_CONFIG_ID": "bpc_1UP3aPFHwPFv1wgeIKid3tHp"
       }
     }
   }

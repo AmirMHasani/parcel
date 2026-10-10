@@ -20,6 +20,10 @@ export const SWEEP_INTERVAL_MS=24*3600000;      // every account re-checked at l
 export const CODE_PATTERN=/^[A-Z0-9-]{6,40}$/;
 
 export function priceId(){return process.env.STRIPE_AGENCY_PRICE_ID||'';}
+// Stripe Tax (automatic calculation) — only when Stripe Tax is active on the account; otherwise Checkout creation fails.
+export function taxEnabled(){return process.env.STRIPE_TAX==='1';}
+// Optional explicit Customer Portal configuration; the account's default is used when unset.
+export function portalConfiguration(){return process.env.STRIPE_PORTAL_CONFIG_ID||'';}
 export function billingReady(){return agencyEnabled()&&!!process.env.STRIPE_SECRET_KEY&&/^price_[A-Za-z0-9]+$/.test(priceId());}
 export function requireBilling(){requireAgencyPlan();if(!billingReady())throw new HttpError(503,'Agency subscriptions are not available right now. Email support if you were invited.');}
 export function normalizeCode(value:unknown){return typeof value==='string'?value.trim().toUpperCase():'';}
@@ -38,6 +42,7 @@ async function createSession(account:{id:string},fields:{email?:string|null;cust
  const origin=siteOrigin();
  const params=new URLSearchParams({mode:'subscription','line_items[0][price]':priceId(),'line_items[0][quantity]':'1',client_reference_id:account.id,'metadata[agency_account]':account.id,'subscription_data[metadata][agency_account]':account.id,success_url:origin+'/agency/account?checkout=complete',cancel_url:origin+'/agency?checkout=cancelled',billing_address_collection:'required','consent_collection[terms_of_service]':'required'});
  if(fields.customer)params.set('customer',fields.customer);else if(fields.email)params.set('customer_email',fields.email);
+ if(taxEnabled()){params.set('automatic_tax[enabled]','true');if(fields.customer)params.set('customer_update[address]','auto');}
  const session=await stripe('checkout/sessions',params,idempotency);
  if(!session?.id||!session?.url)throw new HttpError(503,'Payment provider did not return a checkout link. Please try again.');
  await db().prepare("UPDATE agency_accounts SET stripe_session=?,status='pending',updated=? WHERE id=?").bind(session.id,Date.now(),account.id).run();
@@ -102,7 +107,8 @@ export async function refreshStatus(account:AgencyAccount,force=false):Promise<A
 export async function portalUrl(account:AgencyAccount){
  requireBilling();
  if(!account.stripe_customer)throw new HttpError(409,'Billing is not set up for this account yet.');
- const session=await stripe('billing_portal/sessions',new URLSearchParams({customer:account.stripe_customer,return_url:siteOrigin()+'/agency/account'}));
+ const params=new URLSearchParams({customer:account.stripe_customer,return_url:siteOrigin()+'/agency/account'});if(portalConfiguration())params.set('configuration',portalConfiguration());
+ const session=await stripe('billing_portal/sessions',params);
  if(!session?.url)throw new HttpError(503,'Payment provider did not return a billing page. Please try again.');
  return session.url as string;
 }
