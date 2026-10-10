@@ -106,11 +106,12 @@
         "EMAIL_FROM": "Parcel <support@parcelexport.com>",
         // Agency plan is developed and tested here first. Fill STRIPE_AGENCY_PRICE_ID with the TEST-mode price (price_...).
         "AGENCY_ENABLED": "1",
-        // Test-mode price and portal configuration created October 10, 2026 (Stripe account "Parcel", test mode).
-        "STRIPE_AGENCY_PRICE_ID": "price_1UP3ZaFHwPFv1wgeKHDL6bFg",
+        // Test-mode price created October 10, 2026 in the dashboard's Test mode sandbox (Stripe account "Parcel").
+        "STRIPE_AGENCY_PRICE_ID": "price_1UP7uTEorvYta4KE6cCWgCwX",
         // Set to "1" once Stripe Tax is activated in TEST mode (Settings → Tax → head office); until then Checkout would fail.
         "STRIPE_TAX": "0",
-        "STRIPE_PORTAL_CONFIG_ID": "bpc_1UP3aPFHwPFv1wgeIKid3tHp"
+        // Empty = the account's default Customer Portal configuration (Settings → Billing → Customer portal, saved once).
+        "STRIPE_PORTAL_CONFIG_ID": ""
       }
     }
   }

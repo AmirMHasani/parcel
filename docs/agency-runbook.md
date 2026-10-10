@@ -186,9 +186,10 @@ Checkout sends `automatic_tax[enabled]=true` when `STRIPE_TAX=1`. That only work
 account: Settings → Tax → add the head-office address and your tax registration(s). The test-mode product carries tax
 code `txcd_10103001` (SaaS, business use) and the price is tax-exclusive, so the agency pays $49 plus any applicable
 tax. Staging has `STRIPE_TAX=0` until Stripe Tax is active in test mode; production has `STRIPE_TAX=1` and must have it
-active in live mode before the release. Created through the API on October 10, 2026 (test mode): product
-`prod_VPtMHgpHZRT2Y8`, price `price_1UP3ZaFHwPFv1wgeKHDL6bFg`, portal configuration `bpc_1UP3aPFHwPFv1wgeIKid3tHp`
-(default). Live equivalents are created at release; `STRIPE_PORTAL_CONFIG_ID` may stay empty when the account default is right.
+active in live mode before the release. Test-mode objects (created October 10, 2026 in the dashboard's Test mode
+sandbox): product `prod_VPxqHEHeatiFvs`, price `price_1UP7uTEorvYta4KE6cCWgCwX`; the Customer Portal uses the account
+default (`STRIPE_PORTAL_CONFIG_ID` empty). An earlier product/price made through the Stripe connector landed in a hidden
+legacy test copy of the account and is unused. Live equivalents are created at release; `STRIPE_PORTAL_CONFIG_ID` may stay empty when the account default is right.
 
 ## Local end-to-end run (what was run on October 10, 2026)
 

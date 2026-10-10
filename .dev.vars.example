@@ -1,10 +1,10 @@
 # Local development / end-to-end values. Copy to .dev.vars (ignored by git). No real secrets here.
 AGENCY_ENABLED=1
 STRIPE_SECRET_KEY=sk_test_fake
-STRIPE_AGENCY_PRICE_ID=price_1UP3ZaFHwPFv1wgeKHDL6bFg
+STRIPE_AGENCY_PRICE_ID=price_1UP7uTEorvYta4KE6cCWgCwX
 STRIPE_API_BASE=http://127.0.0.1:4242/v1/
 STRIPE_TAX=1
-STRIPE_PORTAL_CONFIG_ID=bpc_1UP3aPFHwPFv1wgeIKid3tHp
+STRIPE_PORTAL_CONFIG_ID=
 RESEND_API_KEY=re_fake
 RESEND_API_BASE=http://127.0.0.1:4242
 EMAIL_FROM=Parcel <support@parcel.test>
