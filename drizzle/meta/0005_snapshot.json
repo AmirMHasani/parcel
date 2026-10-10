@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c4b97ef5-bb4f-48c5-902d-31a3d988871f",
+  "id": "41d5a09f-3b91-434f-8645-6917ccdb28bc",
   "prevId": "be6680a1-4afc-4967-8994-af598b06d1c4",
   "tables": {
     "agency_accounts": {
@@ -694,6 +694,21 @@
         "client_name": {
           "name": "client_name",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "usage_slot": {
+          "name": "usage_slot",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "usage_period": {
+          "name": "usage_period",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

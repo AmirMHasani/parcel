@@ -34,4 +34,6 @@ CREATE TABLE `usage_cycles` (
 ALTER TABLE `exports` ADD `agency_id` text;--> statement-breakpoint
 ALTER TABLE `exports` ADD `priority` integer DEFAULT 0 NOT NULL;--> statement-breakpoint
 ALTER TABLE `exports` ADD `client_name` text;--> statement-breakpoint
+ALTER TABLE `exports` ADD `usage_slot` integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE `exports` ADD `usage_period` integer;--> statement-breakpoint
 CREATE INDEX `exports_agency` ON `exports` (`agency_id`,`created`);
