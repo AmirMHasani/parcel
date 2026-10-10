@@ -24,6 +24,8 @@ type ParcelEnv = Cloudflare.Env & {
 // Operator endpoints carry their own bearer authorization and must stay
 // reachable by the scheduler even while the public site is password-gated.
 const OPERATOR_PATHS = new Set(["/api/worker/tick", "/api/ops"]);
+// Customer actions that create background work worth starting right away.
+const KICK_PATHS = new Set(["/api/jobs", "/api/jobs/action", "/api/checkout"]);
 
 export default {
   async fetch(request: Request, env: ParcelEnv, ctx: ExecutionContext) {
@@ -42,6 +44,18 @@ export default {
     }
 
     const response = await handler.fetch(request, env, ctx);
+
+    // Start background processing immediately after an export is created,
+    // retried or sent to checkout, instead of waiting for the next minute's
+    // Cron Trigger. Job leases make overlapping runs safe.
+    if (request.method === "POST" && response.ok && KICK_PATHS.has(path)) {
+      ctx.waitUntil(
+        runBackgroundWork(env).catch((error) =>
+          console.error(JSON.stringify({ kick_error: String(error?.message || error) })),
+        ),
+      );
+    }
+
     const headers = new Headers(response.headers);
     const marketing = ["/", "/pricing", "/csv-guide", "/support"].includes(path);
     const approvedPolicy =
