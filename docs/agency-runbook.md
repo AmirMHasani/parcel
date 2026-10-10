@@ -72,3 +72,37 @@ remain downloadable until they expire. Stripe keeps billing; cancel subscription
 - Releases codes and deletes `pending` accounts that never reached Stripe (after 1 hour) or whose session expired.
 - Re-checks one account a day past its 24-hour status age against Stripe, and suspends the account if any charge for
   that customer is disputed. Failures push the next attempt out an hour and are logged as `agency_sweep_error`.
+
+## Queue priority and the capacity target (Phase 4)
+
+How the worker picks the next export: highest *effective priority* first, then the usual round-robin by turn. Agency
+exports have priority 1. A one-time export that has waited more than 10 minutes since it was created
+(`PRIORITY_AGING_MS` in `lib/capacity.ts`) also counts as priority 1, so a paying one-time customer is never starved on
+a busy day. The export page shows a "Priority" badge on agency exports, and queue positions use the same order.
+
+Priority reorders the queue; it does not add capacity. The Cron Trigger runs up to `SCHEDULER_MAX_CALLS` calls a minute,
+each with `TICKS_PER_CALL` ticks, and each tick saves one image — about 80 images a minute across the whole service with
+the current settings. Before the beta, measure the real number on staging and write it here:
+
+```
+node scripts/measure-throughput.mjs https://parcel-staging.<account>.workers.dev items.json            # one-time
+node scripts/measure-throughput.mjs https://parcel-staging.<account>.workers.dev items.json <agency key> # agency
+```
+Use `public/sample-shopify-products.csv` (50 images) first, then a 1 GB-class catalogue. Record date, images, minutes
+and images per minute for an idle queue and again with two other exports running. Then set the published target (for
+example "a 500-image agency export finishes within 15 minutes when the queue is otherwise idle") and the settings that
+reach it (`TICKS_PER_CALL`, `SCHEDULER_MAX_CALLS`, `MAX_CONCURRENT_JOBS`). If the target is out of reach with those
+knobs, see `agency-after-phase-6.md` row 9 (second Cron schedule or Cloudflare Queues) before promising priority on the
+pricing page.
+
+| Date | Export | Images | Minutes | Images/min | Queue state | Settings |
+|---|---|---|---|---|---|---|
+| (to be measured on staging) | | | | | | |
+
+## White-label output
+
+An agency may give each export a client name (letters, digits, spaces, dashes; 60 characters). The ZIP downloads as
+`<client-name>-images.zip`, or `export-<id>-images.zip` when no name was given; one-time exports keep `parcel-<id>.zip`.
+The manifest and failed-downloads files never carried branding. The download header sends an ASCII name for old
+clients plus the real UTF-8 name, so accented or non-Latin client names work in every browser. The website, results
+page and emails are not white-labelled (see the plan's decisions table).

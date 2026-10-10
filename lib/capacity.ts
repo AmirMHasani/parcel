@@ -58,3 +58,12 @@ export function queueEstimate(
     etaSeconds: processing ? Math.ceil(download) + 60 + packing + (queued ? Math.ceil(Math.floor(queue.ahead / capacity) * SECONDS_PER_IMAGE) : 0) : null,
   };
 }
+
+// Agency plan: agency exports (priority 1) are claimed before one-time exports (priority 0), but a one-time export that
+// has waited this long is treated as priority 1 too, so a paying one-time customer is never starved on a busy day.
+export const PRIORITY_AGING_MS = 10 * 60000;
+export function effectivePriority(job: { priority?: number | null; created: number }, now = Date.now()) {
+  return Math.max(job.priority || 0, job.created < now - PRIORITY_AGING_MS ? 1 : 0);
+}
+// SQL form of effectivePriority; bind (now - PRIORITY_AGING_MS) for its single placeholder.
+export const PRIORITY_SQL = 'MAX(priority,CASE WHEN created<? THEN 1 ELSE 0 END)';

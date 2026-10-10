@@ -186,3 +186,6 @@ body{padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-l
 /* Mobile menu: show every link when the menu is open (an older rule hid all but the button). */
 @media(max-width:720px){.nav .nav-links[data-open=true]>a{display:flex}}
 @media(max-width:720px){.guides-home .nav-cta{width:max-content;margin:18px auto 0}}
+
+/* Agency plan: queue-priority badge next to the export status eyebrow. */
+.priority-badge{display:inline-block;margin-left:.5rem;padding:.1rem .45rem;border-radius:999px;font-size:.7rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;background:var(--green);color:#fff;vertical-align:middle;}

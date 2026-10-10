@@ -1,4 +1,5 @@
 import {fixedDownload} from '../../../../lib/fixed-download.mjs';
+import {zipFileName,contentDisposition} from '../../../../lib/zip-name.mjs';
 import {byteRange} from '../../../../lib/download-range.mjs';
 import {downloadAccess} from '../../../../lib/capabilities';
 import {rate,respondError,db,bucket,HttpError,consume,client,event} from '../../../../lib/guard';
@@ -16,7 +17,7 @@ export async function GET(request:Request){try{
  const range=byteRange(!requested||requested===etag?request.headers.get('range'):null,bytes);
  const common={'Accept-Ranges':'bytes','ETag':etag,'Cache-Control':'private, no-store, no-transform','X-Content-Type-Options':'nosniff'};
  if(!range)return new Response(null,{status:416,headers:{...common,'Content-Range':'bytes */'+bytes}});
- const headers={...common,'Content-Type':'application/zip','Content-Length':String(range.end-range.start+1),'Content-Disposition':'attachment; filename="parcel-'+job.id+'.zip"',...(range.partial?{'Content-Range':`bytes ${range.start}-${range.end}/${bytes}`}:{})};
+ const headers={...common,'Content-Type':'application/zip','Content-Length':String(range.end-range.start+1),'Content-Disposition':contentDisposition(zipFileName(job)),...(range.partial?{'Content-Range':`bytes ${range.start}-${range.end}/${bytes}`}:{})};
  if(request.method==='HEAD')return new Response(null,{status:range.partial?206:200,headers});
  const rangeEnd=range.end;
  const ip=await client(request);
