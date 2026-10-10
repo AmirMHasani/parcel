@@ -15,9 +15,9 @@ export const emailOutbox=sqliteTable('email_outbox',{jobId:text('job_id').primar
 
 // Agency subscription plan ($49/month, invite-only beta). Accounts are identified by a private
 // agency key (stored only as a SHA-256 hash, like export recovery keys). status: pending (checkout
-// started), active, past_due, free (cancelled or period ended). Stripe ids are filled in when billing
-// is connected. suspended=1 blocks the account regardless of status (disputes, abuse).
-export const agencyAccounts=sqliteTable('agency_accounts',{id:text('id').primaryKey(),keyHash:text('key_hash').notNull().unique(),email:text('email'),stripeCustomer:text('stripe_customer'),stripeSubscription:text('stripe_subscription'),stripeSession:text('stripe_session'),status:text('status').notNull().default('pending'),periodStart:integer('period_start'),periodEnd:integer('period_end'),statusCheckedAt:integer('status_checked_at'),suspended:integer('suspended').notNull().default(0),created:integer('created').notNull(),updated:integer('updated').notNull()},t=>[index('agency_accounts_status').on(t.status,t.statusCheckedAt)]);
+// started), active, past_due, free (cancelled or period ended). cancel_at_period_end mirrors Stripe so the
+// account page can say "cancels on …". suspended=1 blocks the account regardless of status (disputes, abuse).
+export const agencyAccounts=sqliteTable('agency_accounts',{id:text('id').primaryKey(),keyHash:text('key_hash').notNull().unique(),email:text('email'),stripeCustomer:text('stripe_customer'),stripeSubscription:text('stripe_subscription'),stripeSession:text('stripe_session'),status:text('status').notNull().default('pending'),periodStart:integer('period_start'),periodEnd:integer('period_end'),statusCheckedAt:integer('status_checked_at'),cancelAtPeriodEnd:integer('cancel_at_period_end').notNull().default(0),suspended:integer('suspended').notNull().default(0),created:integer('created').notNull(),updated:integer('updated').notNull()},t=>[index('agency_accounts_status').on(t.status,t.statusCheckedAt)]);
 // Single-use invite codes for the beta gate. account_id/used_at are set when a code is redeemed.
 export const inviteCodes=sqliteTable('invite_codes',{code:text('code').primaryKey(),accountId:text('account_id'),usedAt:integer('used_at'),created:integer('created').notNull()});
 // Exports used per billing period, keyed to the Stripe period start. Slots are reserved atomically at creation and given back on cancel-before-start or zero-image failure.

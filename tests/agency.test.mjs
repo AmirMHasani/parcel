@@ -15,7 +15,7 @@ const columns=table=>sqlite.prepare(`PRAGMA table_info(${table})`).all().map(c=>
 beforeEach(()=>{sqlite=new DatabaseSync(':memory:');apply(migrations);environment.DB={prepare:statement,async batch(s){sqlite.exec('BEGIN');try{const results=[];for(const v of s)results.push(v.run());sqlite.exec('COMMIT');return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}}};objects=new Map();environment.BUCKET={async put(key,data,opts={}){objects.set(key,{data:Buffer.from(data),...opts});},async head(key){return objects.has(key)?{size:1}:null;},async get(key){const v=objects.get(key);return v?{json:async()=>JSON.parse(v.data.toString())}:null;},async delete(keys){for(const k of Array.isArray(keys)?keys:[keys])objects.delete(k);},async list({prefix}){return {objects:[...objects.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))};}};process.env.AGENCY_ENABLED='1';process.env.EXPORT_SIGNING_SECRET='test-secret-test-secret-test-secret';});
 
 test('migration 0005 creates the agency tables and export columns from scratch',()=>{
- assert.deepEqual(columns('agency_accounts'),['id','key_hash','email','stripe_customer','stripe_subscription','stripe_session','status','period_start','period_end','status_checked_at','suspended','created','updated']);
+ assert.deepEqual(columns('agency_accounts'),['id','key_hash','email','stripe_customer','stripe_subscription','stripe_session','status','period_start','period_end','status_checked_at','cancel_at_period_end','suspended','created','updated']);
  assert.deepEqual(columns('invite_codes'),['code','account_id','used_at','created']);
  assert.deepEqual(columns('usage_cycles'),['account_id','period_start','used']);
  for(const c of ['agency_id','priority','client_name'])assert(columns('exports').includes(c),c);
@@ -62,7 +62,7 @@ test('accounts are found by key, never by hash, and the summary hides secrets',a
  assert.equal(account.id,id);
  sqlite.prepare('INSERT INTO usage_cycles(account_id,period_start,used) VALUES(?,?,?)').run(id,1000,46);
  const body=await (await session.GET(request(key))).json();
- assert.deepEqual(Object.keys(body).sort(),['canExport','email','id','limit','periodEnd','periodStart','remaining','status','used','warning'].sort());
+ assert.deepEqual(Object.keys(body).sort(),['canExport','cancelAtPeriodEnd','email','id','limit','periodEnd','periodStart','remaining','status','used','warning'].sort());
  assert.equal(body.used,46);assert.equal(body.remaining,4);assert.equal(body.warning,true);assert.equal(body.canExport,true);assert.equal(body.status,'active');
  assert.equal(JSON.stringify(body).includes(key),false);
  // using the stored hash as if it were a key must fail

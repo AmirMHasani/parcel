@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "30a888e0-4c64-4b67-a333-06fe46bf79a7",
+  "id": "c4b97ef5-bb4f-48c5-902d-31a3d988871f",
   "prevId": "be6680a1-4afc-4967-8994-af598b06d1c4",
   "tables": {
     "agency_accounts": {
@@ -77,6 +77,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "cancel_at_period_end": {
+          "name": "cancel_at_period_end",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "suspended": {
           "name": "suspended",

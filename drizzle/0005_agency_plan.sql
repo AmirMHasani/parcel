@@ -9,6 +9,7 @@ CREATE TABLE `agency_accounts` (
 	`period_start` integer,
 	`period_end` integer,
 	`status_checked_at` integer,
+	`cancel_at_period_end` integer DEFAULT 0 NOT NULL,
 	`suspended` integer DEFAULT 0 NOT NULL,
 	`created` integer NOT NULL,
 	`updated` integer NOT NULL

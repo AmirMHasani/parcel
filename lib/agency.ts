@@ -13,7 +13,7 @@ export const WARN_REMAINING=5;
 export const KEY_FAILURES_PER_DAY=10;
 
 export type AgencyStatus='pending'|'active'|'past_due'|'free';
-export type AgencyAccount={id:string;key_hash:string;email:string|null;stripe_customer:string|null;stripe_subscription:string|null;stripe_session:string|null;status:AgencyStatus;period_start:number|null;period_end:number|null;status_checked_at:number|null;suspended:number;created:number;updated:number};
+export type AgencyAccount={id:string;key_hash:string;email:string|null;stripe_customer:string|null;stripe_subscription:string|null;stripe_session:string|null;status:AgencyStatus;period_start:number|null;period_end:number|null;status_checked_at:number|null;cancel_at_period_end:number;suspended:number;created:number;updated:number};
 
 export function newAgencyKey(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}
 export function validAgencyKey(value:unknown):value is string{return typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);}
@@ -59,5 +59,5 @@ export function canExport(account:AgencyAccount,now=Date.now()){return account.s
 // Public shape returned to the browser. Never includes the key hash or Stripe ids.
 export async function summary(account:AgencyAccount){
  const used=await usedThisPeriod(account),remaining=Math.max(0,EXPORTS_PER_PERIOD-used);
- return {id:account.id,status:account.suspended?'suspended':account.status,email:account.email,periodStart:account.period_start,periodEnd:account.period_end,limit:EXPORTS_PER_PERIOD,used,remaining,warning:remaining<=WARN_REMAINING,canExport:canExport(account)};
+ return {id:account.id,status:account.suspended?'suspended':account.status,email:account.email,periodStart:account.period_start,periodEnd:account.period_end,cancelAtPeriodEnd:!!account.cancel_at_period_end,limit:EXPORTS_PER_PERIOD,used,remaining,warning:remaining<=WARN_REMAINING,canExport:canExport(account)};
 }
