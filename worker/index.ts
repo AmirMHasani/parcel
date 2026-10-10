@@ -9,6 +9,7 @@
 //              its own CPU, memory and subrequest budget, exactly as the old
 //              HTTP runner behaved.
 import handler from "vinext/server/fetch-handler";
+import { guidePaths } from "../lib/seo";
 
 type ParcelEnv = Cloudflare.Env & {
   SELF?: Fetcher;
@@ -57,7 +58,7 @@ export default {
     }
 
     const headers = new Headers(response.headers);
-    const marketing = ["/", "/pricing", "/csv-guide", "/support"].includes(path);
+    const marketing = ["/", "/pricing", "/csv-guide", "/support", ...guidePaths].includes(path);
     const approvedPolicy =
       env.POLICIES_APPROVED === "1" && ["/privacy", "/terms", "/refunds"].includes(path);
     if (env.SEO_INDEXABLE !== "1" || env.SITE_ACCESS_PASSWORD || !(marketing || approvedPolicy)) {
