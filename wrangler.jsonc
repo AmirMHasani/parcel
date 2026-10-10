@@ -35,6 +35,7 @@
     { "pattern": "parcelexport.com", "custom_domain": true },
     { "pattern": "www.parcelexport.com", "custom_domain": true }
   ],
+  "workers_dev": false,
 
   "vars": {
     "PUBLIC_SITE_URL": "https://parcelexport.com",
@@ -49,5 +50,39 @@
     "SEO_INDEXABLE": "1",
     "PAYPAL_ENV": "sandbox",
     "SUPPORT_EMAIL": "support@parcelexport.com"
+  },
+
+  // Private test copy for payment testing (sandbox/test-mode keys only).
+  // Build and deploy with: CLOUDFLARE_ENV=staging pnpm build && pnpm exec wrangler deploy
+  // Password-gated (SITE_ACCESS_PASSWORD secret) so test payments never reach the public.
+  "env": {
+    "staging": {
+      "name": "parcel-staging",
+      "workers_dev": true,
+      "routes": [],
+      "limits": { "cpu_ms": 30000 },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "parcel-staging-db",
+          "database_id": "a12b5fd2-bbb8-46df-ac7a-b615adbd3783",
+          "migrations_dir": "drizzle"
+        }
+      ],
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "parcel-staging-exports" }],
+      "services": [{ "binding": "SELF", "service": "parcel-staging" }],
+      "triggers": { "crons": ["* * * * *"] },
+      "vars": {
+        "PUBLIC_SITE_URL": "https://parcel-staging.amirmh2002.workers.dev",
+        "BACKGROUND_EXPORTS": "1",
+        "TICKS_PER_CALL": "2",
+        "SCHEDULER_MAX_CALLS": "40",
+        "PAYMENTS_ENABLED": "1",
+        "POLICIES_APPROVED": "1",
+        "SEO_INDEXABLE": "0",
+        "PAYPAL_ENV": "sandbox",
+        "SUPPORT_EMAIL": "support@parcelexport.com"
+      }
+    }
   }
 }
