@@ -89,3 +89,42 @@ body{padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-l
 .results-back,.results-nav>a:last-child,.results-links a{display:inline-flex;align-items:center;min-height:44px}
 .parcel-workflow .error h3{margin:0 0 10px;font-size:20px}
 .return-panel .workflow-heading p,.results-footer,.results-links{font-size:15px}
+
+/* ---- Export card, hero assurances and shared footer (Oct 2026 refinement) ---- */
+.card-inner>h2{margin:0 0 6px}
+.card-inner>.muted{margin:0 0 20px}
+.export-card .dropzone{padding:28px 18px;gap:6px}
+.export-card .dropzone small{margin-top:6px}
+.export-card .primary{margin-top:16px}
+.sample-line{margin:14px 0 0;text-align:center;font-size:15px;line-height:1.6;color:var(--muted)}
+.inline-link{background:none;border:0;padding:0;margin:0;font:inherit;font-weight:600;color:var(--green);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+.inline-link:hover{color:#254e37}
+.inline-link:focus-visible,.saved-earlier-link:focus-visible,.card-links a:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:4px}
+.saved-earlier{display:flex;align-items:center;gap:10px;margin:20px 0 0;padding:12px 12px 12px 14px;background:#f5f8f1;border:1px solid #dfe6d8;border-radius:10px;font-size:15px;line-height:1.45;color:var(--ink)}
+.saved-earlier>svg{flex:none;color:var(--green)}
+.saved-earlier>span{flex:1;min-width:0}
+.saved-earlier-link{flex:none;padding:7px 12px;background:#fff;border:1px solid #cbd8c3;border-radius:7px;font-weight:600;color:var(--green);white-space:nowrap}
+.saved-earlier-link:hover{background:#eef3e9}
+.card-links{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin:22px 0 0;padding-top:16px;border-top:1px solid #e9ede5;font-size:14px}
+.card-links a{display:inline-flex;align-items:center;gap:6px;min-height:32px;color:#4f6a4b;white-space:nowrap}
+.card-links a:hover{text-decoration:underline;text-underline-offset:3px}
+.export-card .card-links+.card-foot{border-top:0;margin-top:6px;padding-top:0;font-size:14px;color:#81907e;justify-content:flex-start;text-align:left}
+.hero-assurances{display:grid;gap:18px}
+.hero-assurances .mini-icon{flex:none;display:inline-flex}
+.hero-assurances .mini-proof p{max-width:44ch}
+.site-footer{flex-wrap:wrap;gap:10px 24px}
+.footer-legal{color:var(--muted)}
+.policy-page .site-footer{margin-top:48px;padding-top:24px}
+.results-page .site-footer{margin-top:40px}
+.policy-page .site-footer,.results-page .site-footer{max-width:none;margin-left:0;margin-right:0}
+.policy-page .site-footer nav{margin:0;gap:0 16px}
+@media(max-width:720px){
+  .hero-assurances{max-width:420px;margin:0 auto;text-align:left}
+  .hero-assurances .mini-proof{justify-content:flex-start;align-items:flex-start}
+  .hero-assurances .mini-icon{margin-top:2px}
+}
+@media(max-width:480px){
+  .saved-earlier{flex-wrap:wrap}
+  .saved-earlier-link{margin-left:28px}
+  .card-links{flex-direction:column;align-items:flex-start;gap:4px}
+}

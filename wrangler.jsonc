@@ -2,7 +2,7 @@
 // Non-secret settings live here (they are re-applied on every deploy).
 // Secrets are set with `wrangler secret put NAME` and never committed:
 //   PARCEL_WORKER_SECRET, EXPORT_SIGNING_SECRET, SITE_ACCESS_PASSWORD (pre-launch gate),
-//   STRIPE_SECRET_KEY, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, RESEND_API_KEY (optional).
+//   STRIPE_SECRET_KEY, PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, RESEND_API_KEY (ready-email sending).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "parcel",
@@ -49,7 +49,8 @@
     "POLICIES_APPROVED": "1",
     "SEO_INDEXABLE": "1",
     "PAYPAL_ENV": "live",
-    "SUPPORT_EMAIL": "support@parcelexport.com"
+    "SUPPORT_EMAIL": "support@parcelexport.com",
+    "EMAIL_FROM": "Parcel <support@parcelexport.com>"
   },
 
   // Private test copy for payment testing (sandbox/test-mode keys only).
@@ -81,7 +82,8 @@
         "POLICIES_APPROVED": "1",
         "SEO_INDEXABLE": "0",
         "PAYPAL_ENV": "sandbox",
-        "SUPPORT_EMAIL": "support@parcelexport.com"
+        "SUPPORT_EMAIL": "support@parcelexport.com",
+        "EMAIL_FROM": "Parcel <support@parcelexport.com>"
       }
     }
   }

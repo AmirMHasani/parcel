@@ -51,7 +51,7 @@ GET /api/ops with Authorization: Bearer PARCEL_WORKER_SECRET returns worker hear
 
 Run `pnpm test`, `pnpm typecheck` and `pnpm build`; GitHub Actions runs the same three checks on every push to main and every pull request (.github/workflows/ci.yml). Tests exercise real SQLite migrations with mocked object storage and Stripe: quota atomicity, capability isolation, worker restart, interrupted writes, partial retries, expiry, refunds, CSV compatibility and ZIP integrity. These are not a substitute for live Stripe or browser click-through tests.
 
-The public sample contains ten actual Allbirds storefront products and fifty image URLs collected October 7, 2026. The homepage includes the CSV format guide. Legacy and current Shopify headers are accepted. Earlier HTTP testing downloaded all fifty images and validated ZIP CRCs; image URLs may change.
+The site offers one sample, public/sample-quick.csv (three real Allbirds storefront images), which stays within the free tier so visitors never hit checkout while trying Parcel. public/sample-shopify-products.csv (ten products, fifty image URLs, collected October 7, 2026) is kept unlinked for operator load testing only. The homepage includes the CSV format guide. Legacy and current Shopify headers are accepted. Earlier HTTP testing downloaded all fifty images and validated ZIP CRCs; image URLs may change.
 
 ## Production hardening (October 7, 2026)
 
