@@ -4,7 +4,7 @@ Upload a Shopify CSV, configure filenames and create ZIPs with original image by
 
 ## Hosting and deployment (Cloudflare Workers)
 
-Parcel runs on the owner's Cloudflare account as one Worker named `parcel` (configured in `wrangler.jsonc`) with a D1 database (`parcel-db`, binding `DB`) for job state and an R2 bucket (`parcel-exports`, binding `BUCKET`) for images and ZIP parts. GitHub (`AmirMHasani/parcel`) is the source of truth; pushing to GitHub does not deploy by itself. Earlier versions ran on ChatGPT Sites with an external Render runner; that hosting is retired (see docs/DEBUGGING-PHASES.md for the historical record).
+Parcel runs on the owner's Cloudflare account as one Worker named `parcel` (configured in `wrangler.jsonc`) with a D1 database (`parcel-db`, binding `DB`) for job state and an R2 bucket (`parcel-exports`, binding `BUCKET`) for images and ZIP parts. GitHub (`AmirMHasani/parcel`) is the source of truth and `main` is the only branch; it always matches the live site. Pull before you start, and deploy only from an up-to-date `main` (a deploy replaces the whole live site). Pushing to GitHub does not deploy by itself. Earlier versions ran on ChatGPT Sites with an external Render runner; that hosting is retired (see docs/DEBUGGING-PHASES.md for the historical record).
 
 Deploy from a clean checkout:
 
