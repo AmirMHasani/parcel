@@ -4,7 +4,7 @@ export function generateMetadata(){return pageMetadata('/refunds','No-Refund Pol
 export default function Refunds(){return <PolicyPage title="No-refund policy">
   <p>Effective October 9, 2026.</p>
   <p className="notice"><strong>All completed purchases are final. We do not offer discretionary refunds.</strong> Please check your prepared results and the export price before paying.</p>
-  <p>Parcel is operated by Lumen Collectives LLC. Billing questions can be sent to <a href="mailto:support@parcelexport.com">support@parcelexport.com</a>.</p>
+  <p>Parcel is operated by Lumen Collective LLC. Billing questions can be sent to <a href="mailto:support@parcelexport.com">support@parcelexport.com</a>.</p>
   <h2>Check your package before payment</h2>
   <p>Saved packages are prepared before checkout. The results page shows how many images were saved, how many failed, and the package price. Payment unlocks the prepared ZIP. A package with no successfully saved images cannot be purchased through the normal download flow.</p>
   <h2>When refunds are not available</h2>
