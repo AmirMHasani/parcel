@@ -128,11 +128,7 @@ body{padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-l
   .saved-earlier-link{margin-left:28px}
   .card-links{flex-direction:column;align-items:flex-start;gap:4px}
 }
-/* ---- How-to guides and footer guide links ---- */
-.footer-guides{display:flex;flex-wrap:wrap;align-items:center;gap:0 16px;width:100%;font-size:15px}
-.footer-guides a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink)}
-.footer-guides a:hover{text-decoration:underline;text-underline-offset:3px}
-.footer-guides-title{width:100%;margin-top:6px;font-weight:700;color:var(--ink)}
+/* ---- How-to guides ---- */
 .guide-page h2{margin:40px 0 10px}
 .guide-page p{margin:0 0 14px}
 .guide-page ol,.guide-page ul{color:#53645a;padding-left:26px;margin:14px 0 18px}
@@ -151,3 +147,42 @@ body{padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-l
 .related-guides a:hover{border-color:#b7c8ad;background:#fafbf7}
 .related-guides a:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 @media(max-width:600px){.related-guides ul{grid-template-columns:minmax(0,1fr)}}
+/* ---- Footer columns ---- */
+.site-footer{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);grid-template-areas:"brand product guides policies" "legal legal legal legal";gap:28px 40px;align-items:start;padding:40px 0 36px}
+.footer-brand{grid-area:brand;display:flex;flex-direction:column;gap:6px}
+.footer-product{grid-area:product}.footer-guides{grid-area:guides}.footer-policies{grid-area:policies}
+.site-footer .footer-legal{grid-area:legal;width:auto;padding-top:18px;border-top:1px solid var(--border)}
+.site-footer nav.footer-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin:0;font-size:15px}
+.site-footer nav.footer-col a{display:inline-flex;align-items:center;min-height:34px;color:#4f6a4b;text-decoration:none;line-height:1.35}
+.site-footer nav.footer-col a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.site-footer nav.footer-col a.footer-all{font-weight:600;color:var(--green)}
+.footer-heading{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px}
+@media(max-width:860px){.site-footer{grid-template-columns:1fr 1fr;grid-template-areas:"brand brand" "product policies" "guides guides" "legal legal";gap:24px 28px}}
+/* ---- Guides on the homepage, guides hub, breadcrumbs ---- */
+.guides-home{padding:56px 0 24px;border-top:1px solid var(--border);margin-top:30px;scroll-margin-top:25px}
+.guide-cards{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.guide-cards li{margin:0;padding:0}
+.guide-cards a{display:flex;flex-direction:column;gap:8px;height:100%;padding:20px 20px 22px;background:#fafbf7;border:1px solid #dfe5da;border-radius:10px;color:var(--ink)}
+.guide-cards a:hover{background:#fff;border-color:#bccbb4}
+.guide-cards a:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.guide-cards strong{font-size:17px;line-height:1.35;font-weight:600}
+.guide-cards span{font-size:15px;line-height:1.6;color:var(--muted)}
+.guides-hub .guide-cards{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}
+.guides-hub .guide-cards a{background:#fff;border-color:var(--border)}
+.guides-hub .guide-cards a:hover{border-color:#b7c8ad;background:#fafbf7}
+.guides-hub .guide-cards span{color:#53645a}
+.guides-hub .guide-group{margin-top:8px}
+.guides-intro{font-size:18px;line-height:1.7;max-width:640px}
+.policy-page nav.breadcrumbs{display:flex;gap:8px;align-items:center;margin:22px 0 -8px;font-size:15px;color:var(--muted)}
+.policy-page nav.breadcrumbs a{min-height:32px;color:#4f6a4b}
+@media(max-width:860px){.guide-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.guide-cards,.guides-hub .guide-cards{grid-template-columns:minmax(0,1fr)}.guides-home{padding-top:40px}}
+.guide-page ul.guide-cards{list-style:none;padding:0;margin:14px 0 0;color:inherit}
+.guide-page .guide-cards li{margin:0;padding:0}
+.site-footer .footer-tagline{font-size:15px;color:var(--muted)}
+.policy-page .site-footer{grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) minmax(0,1fr);grid-template-areas:"brand brand brand" "product guides policies" "legal legal legal";gap:24px 32px}
+.policy-page .footer-brand{flex-direction:row;align-items:baseline;gap:16px;flex-wrap:wrap}
+@media(max-width:600px){.policy-page .site-footer{grid-template-columns:1fr 1fr;grid-template-areas:"brand brand" "product policies" "guides guides" "legal legal"}}
+/* Mobile menu: show every link when the menu is open (an older rule hid all but the button). */
+@media(max-width:720px){.nav .nav-links[data-open=true]>a{display:flex}}
+@media(max-width:720px){.guides-home .nav-cta{width:max-content;margin:18px auto 0}}

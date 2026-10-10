@@ -8,10 +8,11 @@ export default function GuidePage({path,children}:{path:string,children:ReactNod
   const guide=guides.find(g=>g.path===path);
   if(!guide)throw Error('Unknown guide '+path);
   const origin=siteOrigin();
-  const schema={'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Parcel',item:origin+'/'},{'@type':'ListItem',position:2,name:guide.heading,item:origin+guide.path}]};
+  const schema={'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Parcel',item:origin+'/'},{'@type':'ListItem',position:2,name:'Guides',item:origin+'/guides'},{'@type':'ListItem',position:3,name:guide.heading,item:origin+guide.path}]};
   const related=guides.filter(g=>g.path!==path);
   return <main id="main-content" className="policy-page guide-page">
     <a className="brand" href="/">parcel.</a>
+    <nav className="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/guides">Guides</a></nav>
     <h1>{guide.heading}</h1>
     {children}
     <a className="primary" href="/#exporter">Pack your first export</a>
@@ -19,7 +20,7 @@ export default function GuidePage({path,children}:{path:string,children:ReactNod
       <h2 id="related-guides-title">Related guides</h2>
       <ul>{related.map(g=><li key={g.path}><a href={g.path}>{g.heading}</a></li>)}</ul>
     </section>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema).replace(/</g,'<')}}/>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema).replace(/</g,'\\u003c')}}/>
     <SiteFooter/>
   </main>;
 }
