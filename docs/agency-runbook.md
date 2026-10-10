@@ -208,3 +208,17 @@ The driver covers verification rows 1–22 and 24–26 with real Shopify images,
 pause switch (row 27) is checked by restarting `wrangler dev` with `AGENCY_ENABLED=0`. Two things to know when
 reading its output: the Worker starts processing an export the instant it is created, and `wrangler dev` does not
 pick up source edits until `pnpm build` runs again.
+
+## Scripts that run the steps above
+
+- `node scripts/rehearse-migration.mjs <export.sql>` (or `pnpm migrate:rehearse <export.sql>`): loads a
+  `wrangler d1 export` of staging or production into memory, applies only the migrations that database has not
+  recorded, and checks row counts, existing export rows byte for byte, new columns and defaults, empty agency tables,
+  integrity and the worker's claim query. Prints PASS/FAIL per check; exit code 1 on any failure.
+- `scripts\agency-staging.ps1` (from `D:\parcel` on `agency`): checks the branch is not behind `main`, runs tests and
+  type check, lists staging secrets and offers to set `STRIPE_SECRET_KEY`, rehearses 0005 on a copy of the staging
+  database, applies migrations to staging, builds and deploys the branch to `parcel-staging`, inserts the three beta
+  invite codes.
+- `scripts\agency-release.ps1` (from `D:\parcel-deploy` on `main`, after PR #1 is merged): the release-day sequence
+  with a confirmation before every irreversible step — Stripe live checklist, production rehearsal, migrate, version
+  upload without traffic, 10 % then 100 % rollout with the flag still off, flag flip, smoke-test instructions.
