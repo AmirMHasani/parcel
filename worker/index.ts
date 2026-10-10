@@ -10,6 +10,7 @@
 //              HTTP runner behaved.
 import handler from "vinext/server/fetch-handler";
 import { guidePaths } from "../lib/seo";
+import { maxConcurrentJobs } from "../lib/capacity";
 
 type ParcelEnv = Cloudflare.Env & {
   SELF?: Fetcher;
@@ -20,6 +21,8 @@ type ParcelEnv = Cloudflare.Env & {
   SITE_ACCESS_PASSWORD?: string;
   RUN_SECONDS?: string;
   SCHEDULER_MAX_CALLS?: string;
+  TICKS_PER_CALL?: string;
+  MAX_CONCURRENT_JOBS?: string;
 };
 
 // Operator endpoints carry their own bearer authorization and must stay
@@ -50,8 +53,11 @@ export default {
     // retried or sent to checkout, instead of waiting for the next minute's
     // Cron Trigger. Job leases make overlapping runs safe.
     if (request.method === "POST" && response.ok && KICK_PATHS.has(path)) {
+      // A request's waitUntil work is cut off 30 s after the response, so this
+      // run stops starting new ticks after 15 s and leaves the rest to the
+      // scheduler instead of stranding leases mid-tick.
       ctx.waitUntil(
-        runBackgroundWork(env).catch((error) =>
+        runBackgroundWork(env, 15).catch((error) =>
           console.error(JSON.stringify({ kick_error: String(error?.message || error) })),
         ),
       );
@@ -85,7 +91,7 @@ export default {
   },
 };
 
-async function runBackgroundWork(env: ParcelEnv) {
+async function runBackgroundWork(env: ParcelEnv, maxSeconds = 50) {
   if (!env.SELF || !env.PARCEL_WORKER_SECRET) {
     console.error(JSON.stringify({ scheduler: "not_configured" }));
     throw new Error("Scheduler requires the SELF binding and PARCEL_WORKER_SECRET.");
@@ -106,21 +112,41 @@ async function runBackgroundWork(env: ParcelEnv) {
       throw new Error(`Expected JSON from ${path}, got HTTP ${response.status}`);
     }
     const json: any = await response.json();
-    if (!response.ok) throw new Error(`${path} returned HTTP ${response.status}: ${json?.error || "error"}`);
+    // The tick route sends headers first, so failures during ticks arrive in the body.
+    if (!response.ok || json?.error) {
+      throw new Error(`${path} returned HTTP ${json?.status || response.status}: ${json?.error || "error"}`);
+    }
     return json;
   };
 
-  // Keep ticking while there is work, for up to ~50 seconds and a bounded
-  // number of calls, then let the next minute's trigger continue. Cleanup runs
-  // on the first call only. Job leases make overlapping runs safe.
-  const seconds = Math.min(50, Math.max(1, Number(env.RUN_SECONDS) || 50));
+  // Run enough parallel lanes to fill the service-wide capacity
+  // (MAX_CONCURRENT_JOBS exports at once). Each lane is a chain of tick calls,
+  // and each call runs TICKS_PER_CALL (at most 2) ticks with its own CPU time.
+  // All calls from this run share one isolate's memory and one limit of six
+  // connections waiting for a response: the tick route sends its headers right
+  // away so lanes do not hold those slots, and MAX_CONCURRENT_PACKING keeps
+  // long storage uploads from using them up. The worker lease in
+  // lib/job-worker.ts enforces the real limit, so a lane with nothing to claim
+  // simply stops.
+  // Lanes keep ticking while there is work, for up to ~50 seconds and a bounded
+  // number of calls each, then the next minute's trigger continues. Cleanup runs
+  // on the first call of the first lane only. Job leases make overlapping runs safe.
+  const seconds = Math.min(maxSeconds, Math.max(1, Number(env.RUN_SECONDS) || 50));
   const maxCalls = Math.min(200, Math.max(1, Number(env.SCHEDULER_MAX_CALLS) || 40));
+  const ticksPerCall = Math.min(2, Math.max(1, Number(env.TICKS_PER_CALL) || 2));
+  const lanes = Math.ceil(maxConcurrentJobs(env.MAX_CONCURRENT_JOBS) / ticksPerCall);
   const deadline = Date.now() + seconds * 1000;
-  for (let calls = 0; calls < maxCalls && Date.now() < deadline; calls++) {
-    const result = await call("/api/worker/tick", JSON.stringify({ clean: calls === 0 }));
-    console.log(JSON.stringify({ worked: result.worked, type: result.type }));
-    if (!result.worked) break;
-  }
+  const lane = async (index: number) => {
+    for (let calls = 0; calls < maxCalls && Date.now() < deadline; calls++) {
+      const clean = index === 0 && calls === 0;
+      const result = await call("/api/worker/tick", JSON.stringify({ clean, ticks: ticksPerCall }));
+      console.log(JSON.stringify({ lane: index, worked: result.worked, type: result.type }));
+      if (!result.worked) break;
+    }
+  };
+  const outcomes = await Promise.allSettled(Array.from({ length: lanes }, (_, index) => lane(index)));
+  const laneError = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === "rejected");
+  if (laneError) console.error(JSON.stringify({ lane_error: String(laneError.reason?.message || laneError.reason) }));
 
   // Surface operator alerts as a failed scheduled run (visible in the
   // Cloudflare dashboard and Workers logs), as the Render runner did.
@@ -130,6 +156,8 @@ async function runBackgroundWork(env: ParcelEnv) {
     console.error(JSON.stringify({ operator_attention: alerts }));
     throw new Error("Parcel needs operator attention: " + JSON.stringify(alerts));
   }
+  // A failed lane still fails the scheduled run (after the other lanes finish).
+  if (laneError) throw laneError.reason;
 }
 
 function internalOrigin(publicUrl?: string) {

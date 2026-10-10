@@ -41,10 +41,20 @@
     "PUBLIC_SITE_URL": "https://parcelexport.com",
     "BACKGROUND_EXPORTS": "1",
     // Workers Paid: two background ticks run concurrently per request.
-    // On Workers Free use "1" (10 ms CPU, 50 subrequests), but large images and
+    // On Workers Free use "1" (10 ms CPU, 50 subrequests) and lower
+    // MAX_CONCURRENT_JOBS to match, but large images and
     // ZIP downloads exceed Free CPU limits, so production runs on Workers Paid.
     "TICKS_PER_CALL": "2",
     "SCHEDULER_MAX_CALLS": "40",
+    // Exports processed at the same moment across the whole service (1–50).
+    // The scheduler runs MAX_CONCURRENT_JOBS / TICKS_PER_CALL parallel lanes.
+    "MAX_CONCURRENT_JOBS": "10",
+    // Of those, exports building their ZIP at once (1–4). Each holds a
+    // streaming storage upload; keep it low (see lib/capacity.ts).
+    "MAX_CONCURRENT_PACKING": "2",
+    // Exports allowed to wait or process at once; more are refused with
+    // "The export queue is full". Never lower than MAX_CONCURRENT_JOBS.
+    "MAX_ACTIVE_EXPORTS": "30",
     "PAYMENTS_ENABLED": "1",
     "POLICIES_APPROVED": "1",
     "SEO_INDEXABLE": "1",
@@ -78,6 +88,9 @@
         "BACKGROUND_EXPORTS": "1",
         "TICKS_PER_CALL": "2",
         "SCHEDULER_MAX_CALLS": "40",
+        "MAX_CONCURRENT_JOBS": "10",
+        "MAX_CONCURRENT_PACKING": "2",
+        "MAX_ACTIVE_EXPORTS": "30",
         "PAYMENTS_ENABLED": "1",
         "POLICIES_APPROVED": "1",
         "SEO_INDEXABLE": "0",

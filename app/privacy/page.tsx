@@ -4,7 +4,7 @@ export function generateMetadata(){return pageMetadata('/privacy','Privacy Polic
 export default function Privacy(){return <PolicyPage title="Privacy policy">
   <p>Effective October 9, 2026.</p>
   <p>Parcel uses the information needed to prepare your image export, recover saved results, prevent abuse, and handle payment or support issues. No Shopify store connection is required.</p>
-  <p>Parcel is operated by Lumen Collectives LLC, which is responsible for the information described in this policy. Privacy questions can be sent to <a href="mailto:support@parcelexport.com">support@parcelexport.com</a>.</p>
+  <p>Parcel is operated by Lumen Collective LLC, which is responsible for the information described in this policy. Privacy questions can be sent to <a href="mailto:support@parcelexport.com">support@parcelexport.com</a>.</p>
   <h2>What you upload</h2>
   <p>Your CSV is read and parsed in your browser. The application does not upload the original CSV file.</p>
   <p>For a saved background export, selected image metadata is sent to the server, including image URLs, product handles, titles, SKUs, positions, alt text, and your export options. The service stores this metadata, downloaded images, and the generated ZIP archive to prepare and recover your package. Include only the product information needed for your export.</p>

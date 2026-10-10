@@ -20,7 +20,7 @@ Recorded live evidence: a 248,769,680-byte ZIP saved in cloud Chrome with all 51
 ## Launch status — October 9, 2026
 
 - Public at https://parcelexport.com on Cloudflare Workers Paid (Worker `parcel`, D1 `parcel-db`, R2 `parcel-exports`); email DNS for support@parcelexport.com (Hostinger mail) lives in the Cloudflare zone.
-- Operator: Lumen Collectives LLC. Owner approved Terms, Privacy, pricing and the no-refund policy (POLICIES_APPROVED=1, SUPPORT_EMAIL set).
+- Operator: Lumen Collective LLC. Owner approved Terms, Privacy, pricing and the no-refund policy (POLICIES_APPROVED=1, SUPPORT_EMAIL set).
 - Sandbox acceptance on the password-gated staging Worker `parcel-staging`: PayPal sandbox order captured once for $9.00 and the export unlocked from server-side discovery; Stripe test-mode Checkout (Parcel account) paid $9.00 and the export unlocked. No billing alerts.
 - Live: Stripe restricted live key installed, PAYMENTS_ENABLED=1. A live Checkout session was created from production for a 26-product export, then expired unpaid. PayPal stays hidden until live credentials are supplied (PAYPAL_ENV=live).
 - Still open: PayPal live credentials; optional real-card purchase + dashboard refund by the owner; C5–C9 device/capacity/operations acceptance; Google Search Console verification.
