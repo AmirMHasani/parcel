@@ -189,3 +189,22 @@ tax. Staging has `STRIPE_TAX=0` until Stripe Tax is active in test mode; product
 active in live mode before the release. Created through the API on October 10, 2026 (test mode): product
 `prod_VPtMHgpHZRT2Y8`, price `price_1UP3ZaFHwPFv1wgeKHDL6bFg`, portal configuration `bpc_1UP3aPFHwPFv1wgeIKid3tHp`
 (default). Live equivalents are created at release; `STRIPE_PORTAL_CONFIG_ID` may stay empty when the account default is right.
+
+## Local end-to-end run (what was run on October 10, 2026)
+
+The whole agency flow can be exercised on a developer machine without Stripe or Cloudflare credentials:
+
+```
+cp .dev.vars.example .dev.vars        # fake Stripe/Resend endpoints, plan on
+pnpm install && pnpm build            # wrangler dev serves the BUILT bundle: rebuild after code changes
+pnpm exec wrangler d1 migrations apply DB --local
+pnpm exec wrangler d1 execute DB --local --command "INSERT INTO invite_codes(code,created) VALUES('AGENCY-BETA',0),('AGENCY-TWO',0),('AGENCY-THREE',0)"
+node scripts/e2e/fake-stripe.mjs &    # fake Stripe (Checkout, Subscriptions, Portal, Charges) + fake Resend on :4242
+pnpm exec wrangler dev --port 8787 &
+node scripts/e2e/agency-e2e.mjs       # Chrome required (E2E_CHROME=<path> to override); results in ./e2e-output
+```
+The driver covers verification rows 1–22 and 24–26 with real Shopify images, the real worker loop and real pages at
+320/390/1280 px. It cannot replace rows 23 (throughput on Cloudflare) and the real-Stripe test-clock steps, and the
+pause switch (row 27) is checked by restarting `wrangler dev` with `AGENCY_ENABLED=0`. Two things to know when
+reading its output: the Worker starts processing an export the instant it is created, and `wrangler dev` does not
+pick up source edits until `pnpm build` runs again.

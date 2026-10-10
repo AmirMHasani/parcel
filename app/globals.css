@@ -200,3 +200,7 @@ body{padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-l
 .agency-status{margin-top:12px}
 .text-button{background:none;border:none;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .lede-copy{font-size:20px;color:#162d23}
+.agency-facts{margin:8px 0 20px;padding-left:20px}
+.agency-facts li{margin:6px 0;color:#53645a}
+.agency-tier ul{padding-left:20px}
+.agency-tier li{margin:4px 0;color:#53645a}

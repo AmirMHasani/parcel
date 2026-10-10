@@ -8,12 +8,12 @@ export const dynamic='force-dynamic';
 export function generateMetadata(){return pageMetadata('/agency','Agency Plan','Parcel’s Agency plan for migration agencies and freelancers: 50 exports a month, priority processing, white-label ZIPs, cancel anytime.');}
 export default function Agency(){if(!agencyEnabled())return <PolicyPage title="Agency plan"><p>The Agency plan is not available yet. See <a href="/pricing">pricing</a> for current options.</p></PolicyPage>;return <PolicyPage title="Agency plan">
   <p className="lede-copy">For migration agencies and freelancers. All your clients, one flat price.</p>
-  <div className="guide-table"><table><tbody>
-    <tr><th>Price</th><td>$49 per month, billed monthly in USD. Cancel anytime; access continues to the end of the paid month.</td></tr>
-    <tr><th>Included</th><td>50 exports per month (fair-use cap), up to 1 GB of images per export, priority processing, white-label ZIPs and reports.</td></tr>
-    <tr><th>Beyond 50</th><td>Extra exports run at the normal one-time price until your month resets.</td></tr>
-    <tr><th>Beta</th><td>Invite-only. You need an invite code from Parcel support.</td></tr>
-  </tbody></table></div>
+  <ul className="agency-facts">
+    <li><strong>Price.</strong> $49 per month, billed monthly in USD. Cancel anytime; access continues to the end of the paid month.</li>
+    <li><strong>Included.</strong> 50 exports per month (fair-use cap), up to 1 GB of images per export, priority processing, white-label ZIPs and reports.</li>
+    <li><strong>Beyond 50.</strong> Extra exports run at the normal one-time price until your month resets.</li>
+    <li><strong>Beta.</strong> Invite-only. You need an invite code from Parcel support.</li>
+  </ul>
   <AgencyJoin ready={billingReady()}/>
   <h2>How it works</h2>
   <p>Enter your invite code and you are taken to Stripe to start the subscription. When you return, Parcel shows your private agency key once. Save it: it is how this browser recognises your account, and it opens every export you run. If you lose it, <a href="/agency/recover">recover it</a> with the email you used at checkout.</p>

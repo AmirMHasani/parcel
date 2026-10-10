@@ -8,7 +8,7 @@ export default function BackgroundExport({data=null,options={},enabled=true,paym
  const autoDownload=useRef(false),emailInput=useRef<HTMLInputElement>(null),lastProgress=useRef<any>(null);
  const [emailError,setEmailError]=useState(''),[measuredETA,setMeasuredETA]=useState<number|null>(null),[showReturnLink,setShowReturnLink]=useState(false),[downloadExpires,setDownloadExpires]=useState(0);
  // Agency plan: the account summary for the key saved in this browser (null = no key), and the client name typed for the next export.
- const [agency,setAgency]=useState<any>(null),[clientName,setClientName]=useState('');const useAgency=!!(agency&&!agency.error&&agency.canExport);
+ const [agency,setAgency]=useState<any>(null),[clientName,setClientName]=useState('');const useAgency=!!(agency&&!agency.error&&agency.canExport&&agency.remaining>0);
  useEffect(()=>{if(!config.agency)return;const saved=readAgency();if(!saved||saved.pending)return;api('/api/agency/session',{headers:{'x-agency-key':saved.key}}).then(setAgency).catch((e:any)=>setAgency({error:e.message}));},[config.agency]);
  useEffect(()=>{if(!job)return;const now=Date.now(),previous=lastProgress.current;setMeasuredETA(observedETA(previous?.job,job,previous?now-previous.time:0));lastProgress.current={job,time:now};},[job]);
  useEffect(()=>{if(!downloadExpires)return;const timer=setTimeout(()=>{setDownloadURL('');setNotice('The direct download link expired. Click Download ZIP for a new link.');},Math.max(0,downloadExpires-Date.now()));return()=>clearTimeout(timer);},[downloadExpires]);
