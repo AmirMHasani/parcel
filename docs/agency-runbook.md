@@ -106,3 +106,23 @@ An agency may give each export a client name (letters, digits, spaces, dashes; 6
 The manifest and failed-downloads files never carried branding. The download header sends an ASCII name for old
 clients plus the real UTF-8 name, so accented or non-Latin client names work in every browser. The website, results
 page and emails are not white-labelled (see the plan's decisions table).
+
+## Customer pages (Phase 5)
+
+- `/pricing` shows the Agency tier as "Beta: request access" with a mailto to `SUPPORT_EMAIL`. It never links to `/agency`.
+- `/agency` (unlisted; noindex, not in the sitemap, disallowed in robots.txt) takes the invite code, saves the key in the
+  browser as pending, and sends the customer to Stripe Checkout. `?checkout=cancelled` shows a notice.
+- `/agency/account` reads the key from the browser (or from a recovery link `?recover=<token>`, or typed in). After
+  Stripe returns with `?checkout=complete`, it shows the key once and polls `/api/agency/session` until the account is
+  active. It shows usage, renewal/cancel date, the period's exports (each opens `/results?export=<id>` — the agency key
+  authorizes it), "Manage billing or cancel" (Stripe portal), "Resubscribe", "Create a new key", "Remove key".
+- `/agency/recover` asks for the billing email and always says "if that email belongs to an account, a link is on its
+  way". The link (`/agency/account?recover=<token>`) works once within an hour and issues a NEW key; the old key keeps
+  working until then, so a stranger typing someone's email cannot lock them out. Requires `RESEND_API_KEY`,
+  `EMAIL_FROM`, `PUBLIC_SITE_URL`; without them the form returns 503 and points at support.
+- Homepage exporter: with an active key saved, the form shows an "Agency · N of 50 exports left" panel and a client-name
+  field, skips the payment gate, and sends `x-agency-key` so the export is an agency export. A key that is not accepted
+  shows a note and the form behaves normally.
+- `/terms`, `/refunds` and `/support` gained Agency sections (monthly renewal, cancel anytime with access to month end,
+  no partial-month refunds, 50-export fair use with one-time prices beyond, white-label = file output only, key is a
+  secret, disputes suspend). **Amir approves this wording before the release.**

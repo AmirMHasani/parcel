@@ -1,13 +1,26 @@
 import {pageMetadata} from '../../lib/seo';
-import {paymentsReady} from '../../lib/launch';
+import {paymentsReady,agencyEnabled,supportEmail} from '../../lib/launch';
 import {maxConcurrentJobs} from '../../lib/capacity';
 import PolicyPage from '../../components/PolicyPage';
 export const dynamic='force-dynamic';
-export function generateMetadata(){return pageMetadata('/pricing','Pricing for Shopify Image Exports','Parcel’s free Shopify image-export tier, one-time package prices, supported file limits, and 24-hour download access.');}
-export default function Pricing(){const paid=paymentsReady(),concurrent=maxConcurrentJobs();return <PolicyPage title="Simple, per-export pricing">
-  <p>Export up to 25 products with supported images for free. Larger packages use a one-time payment in USD. There is no subscription.</p>
+export function generateMetadata(){return pageMetadata('/pricing','Pricing for Shopify Image Exports','Parcel’s free Shopify image-export tier, one-time package prices, the Agency subscription for migration agencies, supported file limits, and 24-hour download access.');}
+export default function Pricing(){const paid=paymentsReady(),concurrent=maxConcurrentJobs(),agency=agencyEnabled(),support=supportEmail();return <PolicyPage title="Simple, per-export pricing">
+  <p>Export up to 25 products with supported images for free. Larger packages use a one-time payment in USD.{agency?' Agencies and freelancers who export for many clients can use the Agency plan below.':''}</p>
   {!paid&&<p className="notice">Free exports are available. Paid checkout is currently unavailable; use a CSV with up to 25 products.</p>}
   <div className="guide-table"><table><thead><tr><th>Products with images</th><th>Price</th><th>Status</th></tr></thead><tbody>{[['Up to 25','$0','Available'],['26–250','$9',paid?'Pay at checkout':'Currently unavailable'],['251–1,000','$19',paid?'Pay at checkout':'Currently unavailable'],['Over 1,000','$39',paid?'Pay at checkout':'Currently unavailable']].map(row=><tr key={row[0]}>{row.map(cell=><td key={cell}>{cell}</td>)}</tr>)}</tbody></table></div>
+  {agency&&<section className="agency-tier" aria-labelledby="agency-tier-title">
+  <h2 id="agency-tier-title">Agency</h2>
+  <p className="lede-copy">For migration agencies and freelancers. All your clients, one flat price.</p>
+  <p><strong>$49 per month</strong>, billed monthly. Cancel anytime.</p>
+  <ul>
+   <li>50 exports per month</li>
+   <li>Priority processing</li>
+   <li>White-label ZIPs and reports</li>
+   <li>Cancel anytime</li>
+  </ul>
+  <p><strong>Beta: request access.</strong> The Agency plan is invite-only while we work with the first agencies. {support?<a href={'mailto:'+support+'?subject=Parcel%20Agency%20plan%20access'}>Email {support}</a>:<a href="/support">Contact support</a>} with a sentence about the clients you migrate, and we will send an invite code.</p>
+  <p className="muted">Fair use: 50 exports per billing month, each up to 1 GB of images. Beyond that, exports run at the one-time prices above until the month resets. Agency exports are processed ahead of one-time exports; a one-time export that has waited more than ten minutes is treated the same way, so nobody is left behind. White-label means the ZIP and its manifest and failed-downloads files carry no Parcel branding; the website and emails still do. Access continues to the end of a cancelled month; there are no refunds for part of a month.</p>
+  </section>}
   <h2>What counts as a product?</h2>
   <p>Pricing counts distinct product handles with supported image URLs. Products without supported images do not count. Multiple images of one product count as one product. Review the parsed count before starting; source-image failures do not automatically lower the quoted product tier.</p>
   <h2>What is included?</h2>
@@ -16,7 +29,7 @@ export default function Pricing(){const paid=paymentsReady(),concurrent=maxConcu
   <p>When paid exports are available, saved packages are prepared before checkout. Review the saved and failed image counts and the displayed price before paying. A package with no saved images cannot be purchased through the normal download flow. One payment unlocks the complete ZIP and redownloads until the package expires.</p>
   <p><strong>Completed purchases are final; no discretionary refunds.</strong> If your export fails because of a technical problem on our side, <a href="/support">contact support</a> and we will refund it. Read the <a href="/refunds">no-refund policy</a> and <a href="/terms">terms</a> before checkout.</p>
   <h2>File and usage limits</h2>
-  <p>CSV uploads have a 10 MB limit. Each export supports up to 10,000 images, with a 20 MB limit per image. Saved exports allow up to 300 MB of image data for free packages and 1 GB for paid packages. The paid tiers remain subject to these limits.</p>
+  <p>CSV uploads have a 10 MB limit. Each export supports up to 10,000 images, with a 20 MB limit per image. Saved exports allow up to 300 MB of image data for free packages and 1 GB for paid{agency?' and Agency':''} packages. The paid tiers remain subject to these limits.</p>
   <p>Saved processing allows five new jobs per client per day and two active jobs per client. Up to {concurrent} exports process at once across the service. When more are waiting, exports take turns, and your export page shows your place in line and an estimated wait. Transfer and download limits may delay processing or downloads. Split oversized catalogs into smaller exports.</p>
   <h2>How long are files available?</h2>
   <p>Saved results remain accessible for 24 hours after the package becomes ready. The window starts before payment; paying and retrying do not extend it. Individual download links last two minutes and can be renewed from the results page within that window.</p>

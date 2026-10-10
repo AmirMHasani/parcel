@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "41d5a09f-3b91-434f-8645-6917ccdb28bc",
+  "id": "2471ecb5-25f7-44da-9007-82e607ad6d49",
   "prevId": "be6680a1-4afc-4967-8994-af598b06d1c4",
   "tables": {
     "agency_accounts": {
@@ -93,6 +93,20 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "recovery_hash": {
+          "name": "recovery_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "recovery_expires": {
+          "name": "recovery_expires",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "created": {
           "name": "created",

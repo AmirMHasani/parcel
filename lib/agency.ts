@@ -13,7 +13,7 @@ export const WARN_REMAINING=5;
 export const KEY_FAILURES_PER_DAY=10;
 
 export type AgencyStatus='pending'|'active'|'past_due'|'free';
-export type AgencyAccount={id:string;key_hash:string;email:string|null;stripe_customer:string|null;stripe_subscription:string|null;stripe_session:string|null;status:AgencyStatus;period_start:number|null;period_end:number|null;status_checked_at:number|null;cancel_at_period_end:number;suspended:number;created:number;updated:number};
+export type AgencyAccount={id:string;key_hash:string;email:string|null;stripe_customer:string|null;stripe_subscription:string|null;stripe_session:string|null;status:AgencyStatus;period_start:number|null;period_end:number|null;status_checked_at:number|null;cancel_at_period_end:number;suspended:number;recovery_hash:string|null;recovery_expires:number|null;created:number;updated:number};
 
 export function newAgencyKey(){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}
 export function validAgencyKey(value:unknown):value is string{return typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);}
@@ -60,4 +60,33 @@ export function canExport(account:AgencyAccount,now=Date.now()){return account.s
 export async function summary(account:AgencyAccount){
  const used=await usedThisPeriod(account),remaining=Math.max(0,EXPORTS_PER_PERIOD-used);
  return {id:account.id,status:account.suspended?'suspended':account.status,email:account.email,periodStart:account.period_start,periodEnd:account.period_end,cancelAtPeriodEnd:!!account.cancel_at_period_end,limit:EXPORTS_PER_PERIOD,used,remaining,warning:remaining<=WARN_REMAINING,canExport:canExport(account)};
+}
+
+export const RECOVERY_TTL_MS=3600000;
+// Lost-key recovery, step 1: a one-hour token for the account whose billing email matches. The token is emailed; the
+// current key keeps working until the token is used, so a stranger typing someone's email cannot lock them out.
+// Returns null when no account matches (the caller answers the same either way).
+export async function createRecovery(email:string){
+ const account=await db().prepare("SELECT * FROM agency_accounts WHERE lower(email)=lower(?) AND status IN ('active','past_due','free') AND suspended=0 ORDER BY updated DESC LIMIT 1").bind(email).first<AgencyAccount>();
+ if(!account)return null;
+ const token=newAgencyKey(),now=Date.now();
+ await db().prepare('UPDATE agency_accounts SET recovery_hash=?,recovery_expires=?,updated=? WHERE id=?').bind(await hash(token),now+RECOVERY_TTL_MS,now,account.id).run();
+ return {account,token};
+}
+// Step 2: the emailed token rotates the key and is consumed. Expired or unknown tokens are a 404 with no detail.
+export async function redeemRecovery(token:unknown){
+ if(!validAgencyKey(token))throw new HttpError(404,'This recovery link is not valid.');
+ const account=await db().prepare('SELECT * FROM agency_accounts WHERE recovery_hash=?').bind(await hash(token)).first<AgencyAccount>();
+ if(!account||!account.recovery_expires||account.recovery_expires<Date.now())throw new HttpError(404,'This recovery link has expired. Request a new one.');
+ const key=newAgencyKey();
+ const r=await db().prepare('UPDATE agency_accounts SET key_hash=?,recovery_hash=NULL,recovery_expires=NULL,updated=? WHERE id=? AND recovery_hash=?').bind(await hash(key),Date.now(),account.id,account.recovery_hash).run();
+ if(!r.meta.changes)throw new HttpError(404,'This recovery link was already used.');
+ return {account,key};
+}
+
+// Exports that belong to the account in its current billing period (or the last 60 days without one), newest first.
+export async function listExports(account:AgencyAccount,limit=60){
+ const since=account.period_start??Date.now()-60*86400000;
+ const rows=await db().prepare('SELECT id,state,total,completed,failed,bytes,created,ready_at,expires,client_name,priority,usage_slot FROM exports WHERE agency_id=? AND created>=? ORDER BY created DESC LIMIT ?').bind(account.id,since,limit).all<any>();
+ return rows.results.map(r=>({id:r.id,state:r.expires<Date.now()&&r.state!=='expired'?'expired':r.state,total:r.total,completed:r.completed,failed:r.failed,bytes:r.bytes,created:r.created,readyAt:r.ready_at,expires:r.expires,clientName:r.client_name,countsTowardLimit:!!r.usage_slot}));
 }

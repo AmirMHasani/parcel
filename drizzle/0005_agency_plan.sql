@@ -11,6 +11,8 @@ CREATE TABLE `agency_accounts` (
 	`status_checked_at` integer,
 	`cancel_at_period_end` integer DEFAULT 0 NOT NULL,
 	`suspended` integer DEFAULT 0 NOT NULL,
+	`recovery_hash` text,
+	`recovery_expires` integer,
 	`created` integer NOT NULL,
 	`updated` integer NOT NULL
 );
