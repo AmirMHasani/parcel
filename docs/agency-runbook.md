@@ -97,7 +97,14 @@ pricing page.
 
 | Date | Export | Images | Minutes | Images/min | Queue state | Settings |
 |---|---|---|---|---|---|---|
-| (to be measured on staging) | | | | | | |
+| 2026-10-10 | one-time, 50-image sample (249 MB) | 50 | 5.04 | 9.9 | idle | TICKS_PER_CALL 2, SCHEDULER_MAX_CALLS 40, MAX_CONCURRENT_JOBS 10 |
+| 2026-10-10 | agency, same sample | 50 | 4.63 | 10.8 | idle | same |
+| 2026-10-10 | agency, same sample | 50 | 4.95 | 10.1 | two one-time 50-image exports running | same |
+
+Reading: the sample's images average 5 MB, so one export moves about 0.8 MB/s — roughly 10 images or 50 MB a minute per
+export, and three exports in parallel did not slow each other (10 parallel lanes). Published target for the beta: **a
+250 MB agency catalogue finishes in about 5 minutes and a 1 GB one in about 20 when the queue is otherwise idle**; the
+current settings reach it. A 1 GB-class catalogue has not been timed end to end yet.
 
 ## White-label output
 
