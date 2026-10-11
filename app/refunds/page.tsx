@@ -9,6 +9,8 @@ export default function Refunds(){return <PolicyPage title="No-refund policy">
   <p>Saved packages are prepared before checkout. The results page shows how many images were saved, how many failed, and the package price. Payment unlocks the prepared ZIP. A package with no successfully saved images cannot be purchased through the normal download flow.</p>
   <h2>When refunds are not available</h2>
   <p>We do not offer refunds for changing your mind, uploading the wrong CSV, selecting the wrong filename or folder options, duplicate purchases you intentionally make, or deciding that you no longer need the images. Refunds are not available for source-image quality, unavailable source URLs shown in the prepared results, or failing to download before expiry.</p>
+  <h2>Agency subscription</h2>
+  <p>Agency subscription payments cover the month ahead and are not refunded for unused exports or for part of a month. Cancel from your account page at any time: billing stops and your access continues until the end of the month you have paid for. Reaching the 50-export fair-use allowance does not entitle you to a refund; extra exports are available at the one-time prices. A genuinely duplicated subscription charge is a billing error and is corrected; contact support with the Stripe receipt.</p>
   <h2>Partial exports and retries</h2>
   <p>A partial package contains the images that were successfully downloaded. Check the saved and failed counts before paying. Partial packages are not eligible for discretionary refunds. Where available, you can retry failed work up to twice within the existing access window without paying again. Retries do not guarantee recovery of unavailable images or extend the package expiry.</p>
   <h2>Download access</h2>

@@ -1,7 +1,29 @@
 import {workerAuth,db,respondError,boundedJSON,HttpError} from '../../../lib/guard';
+import {agencyEnabled} from '../../../lib/launch';
+import {PENDING_RECOVERY_MS} from '../../../lib/agency-billing';
+
+// Agency plan health for the operator. Counts are informational; `alerts` fail the scheduled run like the others.
+// Wrapped so a database that has not received migration 0005 yet cannot break the whole ops response.
+export const AGENCY_PENDING_ALERT_MS=10*60000;   // a paid checkout still pending this long needs a look
+export const AGENCY_ERROR_ALERT_COUNT=3;         // agency_* errors in the last 24 h before alerting
+export async function agencyOps(now:number){
+ try{
+  const [accounts,exportsThisPeriod,codes,pendingStale,errors]=await Promise.all([
+   db().prepare("SELECT status,SUM(CASE WHEN suspended=1 THEN 1 ELSE 0 END) suspended,COUNT(*) accounts FROM agency_accounts GROUP BY status").all<any>(),
+   db().prepare('SELECT COALESCE(SUM(u.used),0) used,COUNT(*) accounts FROM usage_cycles u JOIN agency_accounts a ON a.id=u.account_id AND a.period_start=u.period_start').first<any>(),
+   db().prepare('SELECT SUM(CASE WHEN account_id IS NULL THEN 1 ELSE 0 END) unused,SUM(CASE WHEN used_at IS NOT NULL THEN 1 ELSE 0 END) used FROM invite_codes').first<any>(),
+   db().prepare("SELECT COUNT(*) n FROM agency_accounts WHERE status='pending' AND stripe_session IS NOT NULL AND updated<?").bind(now-Math.max(AGENCY_PENDING_ALERT_MS,PENDING_RECOVERY_MS)).first<any>(),
+   db().prepare("SELECT COUNT(*) n FROM error_events WHERE code IN ('agency_sweep_error','agency_activation_error','agency_maintenance_error') AND created>?").bind(now-86400000).first<any>(),
+  ]);
+  const byStatus:Record<string,number>={};let suspended=0;for(const r of accounts.results){byStatus[r.status]=r.accounts;suspended+=r.suspended||0;}
+  return {enabled:agencyEnabled(),accounts:byStatus,suspended,exportsThisPeriod:exportsThisPeriod?.used||0,accountsWithUsage:exportsThisPeriod?.accounts||0,inviteCodes:{unused:codes?.unused||0,used:codes?.used||0},
+   alerts:{agencyPendingStale:pendingStale?.n||0,agencyErrors:(errors?.n||0)>=AGENCY_ERROR_ALERT_COUNT?errors.n:0}};
+ }catch(e:any){return {enabled:agencyEnabled(),unavailable:e?.message||'agency tables unavailable',alerts:{agencyPendingStale:0,agencyErrors:0}};}
+}
 
 export async function GET(request:Request){try{
  await workerAuth(request);const now=Date.now();
+ const agency=await agencyOps(now);
  const [health,states,errors,reviews,usage,attention,emails,failedEmails]=await Promise.all([
   db().prepare('SELECT * FROM worker_health').all(),
   db().prepare('SELECT state,COUNT(*) jobs FROM exports GROUP BY state').all(),
@@ -18,8 +40,8 @@ export async function GET(request:Request){try{
   db().prepare('SELECT state,COUNT(*) notifications FROM email_outbox GROUP BY state').all(),
   db().prepare("SELECT o.job_id FROM email_outbox o JOIN exports j ON j.id=o.job_id WHERE o.state='failed' AND j.email_reviewed_at IS NULL").all()
  ]);
- return Response.json({emails:emails.results,failedEmails:failedEmails.results,health:health.results,states:states.results,errors:errors.results,reviews:reviews.results,usage:usage.results,
-  alerts:{stalled:attention?.stalled||0,refundReview:attention?.refundReview||0,delayedRefunds:attention?.delayedRefunds||0,billingReviews:attention?.billingReviews||0,checkoutReviews:attention?.checkoutReviews||0,failedEmails:failedEmails.results.length}
+ return Response.json({emails:emails.results,failedEmails:failedEmails.results,health:health.results,states:states.results,errors:errors.results,reviews:reviews.results,usage:usage.results,agency,
+  alerts:{stalled:attention?.stalled||0,refundReview:attention?.refundReview||0,delayedRefunds:attention?.delayedRefunds||0,billingReviews:attention?.billingReviews||0,checkoutReviews:attention?.checkoutReviews||0,failedEmails:failedEmails.results.length,...agency.alerts}
  },{headers:{'Cache-Control':'no-store'}});
 }catch(e){return respondError(e);}}
 

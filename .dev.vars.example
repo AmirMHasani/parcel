@@ -1,0 +1,18 @@
+# Local development / end-to-end values. Copy to .dev.vars (ignored by git). No real secrets here.
+AGENCY_ENABLED=1
+STRIPE_SECRET_KEY=sk_test_fake
+STRIPE_AGENCY_PRICE_ID=price_1UP7uTEorvYta4KE6cCWgCwX
+STRIPE_API_BASE=http://127.0.0.1:4242/v1/
+STRIPE_TAX=1
+STRIPE_PORTAL_CONFIG_ID=
+RESEND_API_KEY=re_fake
+RESEND_API_BASE=http://127.0.0.1:4242
+EMAIL_FROM=Parcel <support@parcel.test>
+PUBLIC_SITE_URL=https://parcelexport.com
+PARCEL_WORKER_SECRET=local-worker-secret-0123456789abcdef
+EXPORT_SIGNING_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+PAYMENTS_ENABLED=1
+POLICIES_APPROVED=1
+SUPPORT_EMAIL=support@parcelexport.com
+SEO_INDEXABLE=1
+BACKGROUND_EXPORTS=1

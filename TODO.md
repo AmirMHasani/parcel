@@ -56,6 +56,23 @@ Acceptance evidence for every C item: date, source/deployed version, environment
 - [x] **C13 — Repository hygiene.** `tsconfig.tsbuildinfo` untracked and ignored; `.dev.vars` ignored. Original note: Stop tracking generated `tsconfig.tsbuildinfo` and add it to `.gitignore`. Keep runtime secrets, private recovery links, customer exports, and provider records out of commits.
 - [ ] **C14 — Release and recovery procedure.** Record the exact tested source/version, migration compatibility, runtime configuration names, runner version, rollback steps, and responsible operator. Re-run affected checks after any repair discovered during acceptance.
 
+## Agency plan — release gate (branch `agency`)
+
+Code for all six phases is on the `agency` branch (see `docs/agency-runbook.md`, `docs/agency-verification.md`).
+Production gets it in one release. Before that:
+
+- [ ] **Amir — Stripe test mode:** restricted key with subscription permissions on staging; "Parcel Agency" $49/month
+  price → `env.staging.vars.STRIPE_AGENCY_PRICE_ID`; Terms URL in Public details; Customer Portal saved; Smart Retries
+  set to cancel after the final retry; customer emails on.
+- [ ] **Amir — staging:** confirm `RESEND_API_KEY`/`EMAIL_FROM`; rehearse migration 0005 on an exported copy of
+  production; apply to `parcel-staging-db`; deploy the branch with `CLOUDFLARE_ENV=staging`.
+- [ ] **Amir — wording:** approve the Agency sections on `/pricing`, `/terms`, `/refunds`, `/support`.
+- [ ] **Amir — tax:** decide on Stripe Tax / billing address handling with an accountant (prerequisite in the plan).
+- [ ] **Verification:** rows 1–27 of `docs/agency-verification.md` on staging, including the throughput measurement
+  that sets the "priority processing" target.
+- [ ] **Release:** `docs/agency-runbook.md` → "Release and rollback" (tag, rehearse, merge, migrate, gradual version
+  rollout with the flag off, flag on, owner smoke test, first invite).
+
 ## Open investigations — not confirmed current defects
 
 - [ ] **I1 — Historical HTML instead of JSON.** The original failure's upstream cause remains unknown. Handling and redacted diagnostics are implemented. If it recurs, capture status, content type, requested/final path, redirect chain, and request ID; identify the responsible layer and add a regression for the reproduced cause. Never capture recovery keys or full response bodies containing private data.

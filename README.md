@@ -61,6 +61,15 @@ The scheduler refuses HTTP redirects and requires JSON responses. It checks oper
 
 Launch scope: paid commercial launch remains blocked on real Stripe/PayPal sandbox tests, an operator support contact and refund review procedure, and owner-approved public access. Do not describe a password-gated deployment as a public commercial launch.
 
+## Agency subscription plan (branch `agency`, not yet released)
+
+A $49/month subscription for migration agencies: 50 exports per billing month, 1 GB per export, priority in the worker
+queue, client-named ZIPs. Invite-only beta. Everything is behind `AGENCY_ENABLED` (production `0`, staging `1`) and ships
+to production once, as a single release, after the checklist in `docs/agency-verification.md` passes on staging.
+Operator steps: `docs/agency-runbook.md`. Code: `lib/agency*.ts`, `lib/zip-name.mjs`, `app/api/agency/*`,
+`app/agency/*`, `components/Agency*.tsx`; migration `drizzle/0005_agency_plan.sql` (additive). Stripe Checkout runs in
+subscription mode; status is read from Stripe (10-minute cache, daily sweep); there is no webhook endpoint in the beta.
+
 ## Customer pages and remaining launch work
 
 /pricing, /support, /privacy, /terms and /refunds are available. Information pages are complete with a no-refund policy for completed purchases. A dedicated support contact and the existing launch checks remain required. Configure SUPPORT_EMAIL and POLICIES_APPROVED=1 before enabling paid exports. Payment readiness requires PAYMENTS_ENABLED=1, POLICIES_APPROVED=1, a valid SUPPORT_EMAIL and Stripe or PayPal credentials, plus a healthy background runner for new jobs. Successful refunds are rechecked for seven days so later failure is surfaced to the operator. See docs/launch-runbook.md for the test plan and owner-dependent gates.
