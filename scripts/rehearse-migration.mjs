@@ -36,8 +36,12 @@ for(const t of Object.keys(before))ok('row count unchanged: '+t,before[t]===afte
 if(fpBefore)ok('existing export rows unchanged (pre-existing columns)',fingerprint()===fpBefore);
 const want={exports:['agency_id','priority','client_name','usage_slot','usage_period'],agency_accounts:['id','key_hash','status','period_start','period_end','cancel_at_period_end','suspended','recovery_hash','recovery_expires'],invite_codes:['code','account_id','used_at'],usage_cycles:['account_id','period_start','used']};
 for(const [t,cs] of Object.entries(want)){const have=cols(t);ok('columns present: '+t,cs.every(c=>have.includes(c)),cs.filter(c=>!have.includes(c)).join(',')||'all');}
-if(after.exports){const d=db.prepare('SELECT COUNT(*) n FROM exports WHERE priority=0 AND usage_slot=0 AND agency_id IS NULL').get().n;ok('existing exports default to priority 0 / no agency',d===after.exports,`${d} of ${after.exports}`);}
-for(const t of ['agency_accounts','invite_codes','usage_cycles'])ok('empty: '+t,count(t)===0);
+// These two only make sense when 0005 is being applied by this rehearsal: a database that already carries the
+// migration legitimately has agency accounts, used codes and agency exports.
+if(pending.includes('0005_agency_plan.sql')){
+ if(after.exports){const d=db.prepare('SELECT COUNT(*) n FROM exports WHERE priority=0 AND usage_slot=0 AND agency_id IS NULL').get().n;ok('existing exports default to priority 0 / no agency',d===after.exports,`${d} of ${after.exports}`);}
+ for(const t of ['agency_accounts','invite_codes','usage_cycles'])ok('empty: '+t,count(t)===0);
+}else console.log('skip: 0005 already recorded — the fresh-table checks do not apply');
 ok('integrity_check',db.prepare('PRAGMA integrity_check').get().integrity_check==='ok');
 ok('foreign_key_check',db.prepare('PRAGMA foreign_key_check').all().length===0);
 // the index the worker's claim query relies on

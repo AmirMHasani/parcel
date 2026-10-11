@@ -32,7 +32,9 @@ Confirm "All of the above done?"
 Step "Rehearsing migration 0005 on a copy of the PRODUCTION database"
 pnpm exec wrangler d1 export DB --remote --output prod-copy.sql
 node scripts/rehearse-migration.mjs prod-copy.sql
+$rehearsal = $LASTEXITCODE
 Remove-Item prod-copy.sql -Force
+if ($rehearsal -ne 0) { Write-Host "The migration rehearsal failed (see the FAIL lines above). Nothing has been changed. Stopping." -ForegroundColor Red; exit 1 }
 Confirm "Rehearsal passed — apply the migration to production now? (today's code keeps working against it)"
 pnpm exec wrangler d1 migrations apply DB --remote
 

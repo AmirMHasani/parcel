@@ -32,7 +32,9 @@ if ($put -eq "y") { pnpm exec wrangler secret put STRIPE_SECRET_KEY }
 Step "Rehearsing migration 0005 on a copy of the STAGING database (production rehearsal is a release-day step)"
 pnpm exec wrangler d1 export DB --remote --output staging-copy.sql
 node scripts/rehearse-migration.mjs staging-copy.sql
+$rehearsal = $LASTEXITCODE
 Remove-Item staging-copy.sql -Force
+if ($rehearsal -ne 0) { Write-Host "The migration rehearsal failed (see the FAIL lines above). Nothing has been changed. Stopping." -ForegroundColor Red; exit 1 }
 
 Step "Applying migrations to parcel-staging-db"
 pnpm exec wrangler d1 migrations apply DB --remote
