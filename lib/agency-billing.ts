@@ -35,7 +35,11 @@ export function mapSubscription(sub:any){
  const map:Record<string,AgencyStatus>={active:'active',trialing:'active',past_due:'past_due'};
  const item=sub?.items?.data?.[0];
  const start=sub?.current_period_start??item?.current_period_start,end=sub?.current_period_end??item?.current_period_end;
- return {status:map[sub?.status]||'free',periodStart:Number.isFinite(start)?start*1000:null,periodEnd:Number.isFinite(end)?end*1000:null,cancelAtPeriodEnd:sub?.cancel_at_period_end?1:0,customer:typeof sub?.customer==='string'?sub.customer:sub?.customer?.id||null};
+ // A scheduled cancellation is cancel_at_period_end=true (classic billing mode) or a cancel_at timestamp with the flag
+ // false (flexible billing mode, the default for new accounts; the Customer Portal sets cancel_at directly there).
+ const cancelAt=Number.isFinite(sub?.cancel_at)?sub.cancel_at*1000:null;
+ const scheduled=!!sub?.cancel_at_period_end||(cancelAt!==null&&(!Number.isFinite(end)||cancelAt<=end*1000+86400000));
+ return {status:map[sub?.status]||'free',periodStart:Number.isFinite(start)?start*1000:null,periodEnd:Number.isFinite(end)?end*1000:null,cancelAtPeriodEnd:scheduled?1:0,customer:typeof sub?.customer==='string'?sub.customer:sub?.customer?.id||null};
 }
 
 async function createSession(account:{id:string},fields:{email?:string|null;customer?:string|null},idempotency:string){

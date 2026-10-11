@@ -53,10 +53,11 @@ export async function refundUsageSlot(accountId:string,period:number){
  await db().prepare('UPDATE usage_cycles SET used=MAX(0,used-1) WHERE account_id=? AND period_start=?').bind(accountId,period).run();
 }
 
-// Gives the slot back when an export ends without producing anything: cancelled before it started, or failed with
-// zero images. The usage_slot flag makes this happen at most once per export, whatever path leads here.
-export async function releaseUsageSlot(jobId:string){
- const row=await db().prepare('UPDATE exports SET usage_slot=0 WHERE id=? AND usage_slot=1 AND agency_id IS NOT NULL AND completed=0 AND usage_period IS NOT NULL RETURNING agency_id,usage_period').bind(jobId).first<{agency_id:string;usage_period:number}>();
+// Gives the slot back when an export ends without producing a ZIP: cancelled (at any point — a cancelled export
+// is never downloadable, so it is not counted, as the account page promises), or failed with zero images. The
+// usage_slot flag makes this happen at most once per export, whatever path leads here.
+export async function releaseUsageSlot(jobId:string,reason:'cancelled'|'failed'='failed'){
+ const row=await db().prepare("UPDATE exports SET usage_slot=0 WHERE id=? AND usage_slot=1 AND agency_id IS NOT NULL AND usage_period IS NOT NULL AND (?='cancelled' OR completed=0) RETURNING agency_id,usage_period").bind(jobId,reason).first<{agency_id:string;usage_period:number}>();
  if(row)await refundUsageSlot(row.agency_id,row.usage_period);
  return !!row;
 }

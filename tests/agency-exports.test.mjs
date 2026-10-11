@@ -45,7 +45,7 @@ test('the cap: a warning at five remaining, a refusal with the reset date at fif
  assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM exports WHERE agency_id=?").get(id).n,2);
 });
 
-test('cancelling before start and failing with zero images give the slot back, once; retries never take a new one',async()=>{
+test('cancelling (even after images were saved) and failing with zero images give the slot back, once; retries never take a new one',async()=>{
  const {id,key}=await active();const h={'x-agency-key':key};
  const b=body(1),job=await jobs.createJob(request(h),b);const start=jobRow(job.id).usage_period;assert.equal(usage(id,start),1);
  await jobs.jobAction(request({'x-export-key':b.key}),jobRow(job.id),'cancel');
@@ -57,9 +57,13 @@ test('cancelling before start and failing with zero images give the slot back, o
  assert.equal(jobRow(failed.id).state,'failed');assert.equal(jobRow(failed.id).completed,0);assert.equal(usage(id,start),0);assert.equal(jobRow(failed.id).usage_slot,0);
  await jobs.jobAction(request({'x-export-key':bad.key}),jobRow(failed.id),'retry');assert.equal(usage(id,start),0);
  for(let i=0;i<4;i++)await worker.tick();assert.equal(jobRow(failed.id).state,'failed');assert.equal(usage(id,start),0); // failing again does not refund twice
- // an export that produced images keeps its slot even if cancelled later
+ // an export that already saved images is still refunded when cancelled (no ZIP is ever produced), but only once
  const ok=body(2),good=await jobs.createJob(request(h),ok);await worker.tick();assert.equal(jobRow(good.id).completed,1);
- await jobs.jobAction(request({'x-export-key':ok.key}),jobRow(good.id),'cancel');assert.equal(usage(id,start),1);assert.equal(jobRow(good.id).usage_slot,1);
+ await jobs.jobAction(request({'x-export-key':ok.key}),jobRow(good.id),'cancel');assert.equal(usage(id,start),0);assert.equal(jobRow(good.id).usage_slot,0);
+ assert.equal(await exportsLib.releaseUsageSlot(good.id,'cancelled'),false);
+ // a partial export (some images saved, then final failure) keeps its slot
+ const part=body(2);part.items[1].url='https://cdn.shopify.com/missing.png';const partial=await jobs.createJob(request(h),part);assert.equal(usage(id,start),1);
+ for(let i=0;i<6;i++)await worker.tick();assert.ok(jobRow(partial.id).completed>=1);assert.equal(await exportsLib.releaseUsageSlot(partial.id),false);assert.equal(usage(id,start),1);
 });
 
 test('the agency key opens the account\'s own exports and nothing else',async()=>{

@@ -130,6 +130,10 @@ test('newer Stripe API shapes (period dates on the subscription item) are read t
  const m=billing.mapSubscription({status:'trialing',customer:{id:'cus_9'},items:{data:[{current_period_start:1,current_period_end:2}]}});
  assert.deepEqual(m,{status:'active',periodStart:1000,periodEnd:2000,cancelAtPeriodEnd:0,customer:'cus_9'});
  assert.equal(billing.mapSubscription({status:'unpaid'}).status,'free');
+ // flexible billing mode: the Customer Portal schedules a cancellation with cancel_at and leaves cancel_at_period_end false
+ assert.equal(billing.mapSubscription({status:'active',cancel_at_period_end:false,cancel_at:2,items:{data:[{current_period_start:1,current_period_end:2}]}}).cancelAtPeriodEnd,1);
+ assert.equal(billing.mapSubscription({status:'active',cancel_at_period_end:false,cancel_at:null,items:{data:[{current_period_start:1,current_period_end:2}]}}).cancelAtPeriodEnd,0);
+ assert.equal(billing.mapSubscription({status:'active',cancel_at_period_end:true,items:{data:[{current_period_start:1,current_period_end:2}]}}).cancelAtPeriodEnd,1);
 });
 
 test('the daily sweep refreshes one stale account and suspends on a dispute',async()=>{
