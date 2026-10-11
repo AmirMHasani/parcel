@@ -126,6 +126,6 @@ test('image downloads for agency exports draw on the account\'s own daily allowa
 test('when the plan is off, agency keys are ignored for creation but still open existing agency exports',async()=>{
  const {key}=await active();const b=body(1),job=await jobs.createJob(request({'x-agency-key':key}),b);
  delete process.env.AGENCY_ENABLED;
- await assert.rejects(jobs.createJob(request({'x-agency-key':key}),body(1)),e=>e.status===404);
+ const plain=await jobs.createJob(request({'x-agency-key':key}),body(1));assert.equal(jobRow(plain.id).agency_id,null);assert.equal(jobRow(plain.id).priority,0); // the key is ignored, not refused
  assert.equal((await jobs.getJob(request({'x-agency-key':key}),job.id)).id,job.id);
 });

@@ -3,7 +3,7 @@
 // account's EXPORTS_PER_PERIOD slots for the current billing period, reserved atomically. Limits are per
 // account (not per network address), so an agency on office Wi-Fi never shares limits with a free user.
 import {db,consume,hash,HttpError} from './guard';
-import {supportEmail} from './launch';
+import {supportEmail,agencyEnabled} from './launch';
 import {EXPORTS_PER_PERIOD,findAccount,validAgencyKey,AGENCY_KEY_HEADER,type AgencyAccount} from './agency';
 import {refreshStatus} from './agency-billing';
 
@@ -20,6 +20,9 @@ function support(){return supportEmail()||'support';}
 // explaining why it cannot export right now. Period rollovers are refreshed from Stripe immediately.
 export async function agencyForExport(request:Request):Promise<AgencyAccount|null>{
  if(!request.headers.get(AGENCY_KEY_HEADER))return null;
+ // With the plan switched off (rollback), a key a browser still holds is ignored and the export runs as a normal one,
+ // so nobody is locked out of the exporter by a saved key.
+ if(!agencyEnabled())return null;
  let account=await refreshStatus(await findAccount(request));
  const now=Date.now();
  if(account.status==='active'&&account.period_end!=null&&account.period_end<=now&&account.stripe_subscription)account=await refreshStatus(account,true);
